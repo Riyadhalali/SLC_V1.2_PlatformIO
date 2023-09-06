@@ -1,3 +1,4 @@
+
 #include <Arduino.h>
 #include <LiquidCrystal.h>
 #include <RTClib.h>
@@ -88,6 +89,7 @@ unsigned int  ReadBatteryTime=0;
 char RunOnBatteryVoltageMode=0;
 bool UPSMode=0;       // i made ups mode and upo mode in same variable
 char LoadsAlreadySwitchedOFF=0;
+uint16_t Full_Seconds;
 //-------------------------------------------------------------------------------------------------------
 //-----------------------------------Functions---------------------------------
 void EEPROM_Load();
@@ -146,6 +148,9 @@ void LCD_ReConfig();
 void Interrupt_INT0();
 void Interrupt_INT1();
 void Read_Time();
+unsigned short ReadMinutes();
+unsigned short ReadHours();
+
 //---------------------------------------------------------------------------------------
 void Gpio_Init()
 {
@@ -1016,7 +1021,7 @@ rtc.adjust(DateTime(set_ds1307_year, set_ds1307_month, set_ds1307_day, set_ds130
  if(ReadHours() > hours_lcd_1 && ReadHours()< hours_lcd_2)
  {
  Timer_isOn=1;
- HAL_GPIO_WritePin(RELAY_L_1_GPIO_Port, RELAY_L_1_Pin, GPIO_PIN_SET);
+
  }
  //-> seconds compare hours if equal now then compare minutes
  if(ReadHours()== hours_lcd_1 || ReadHours()== hours_lcd_2)
@@ -1114,6 +1119,30 @@ rtc.adjust(DateTime(set_ds1307_year, set_ds1307_month, set_ds1307_day, set_ds130
  }
  //--------------------------------End of Second Timer
  } // end of run on battery voltage
+ }
+ //-----------------------------------Read Time-------------------------------------------------
+ //-------------------------------Read Seconds-----------------------------------
+ unsigned short ReadSeconds()
+ {
+  DateTime now = rtc.now();
+ Full_Seconds=now.second();
+ return Full_Seconds;
+ }
+
+ //-------------------------------Read Minutes-----------------------------------
+ unsigned short ReadMinutes()
+ {
+  DateTime now = rtc.now();
+ 	Full_Seconds=now.minute();
+ 	return Full_Seconds;
+ }
+ //----------------------------Read hours----------------------------------------
+ unsigned short ReadHours()
+ {
+  DateTime now = rtc.now();
+
+ 	Full_Seconds=now.hour();
+ 	return Full_Seconds;
  }
 //-----------------------------------------Main Loop--------------------------------------------
 void setup() {
