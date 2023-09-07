@@ -92,9 +92,9 @@ bool UPSMode=0;       // i made ups mode and upo mode in same variable
 char LoadsAlreadySwitchedOFF=0;
 uint16_t Full_Seconds;
 unsigned long currentTime = 0;
-const unsigned long eventInterval = 25000;
+const unsigned long eventInterval_T1 = 25000,eventInterval_T2 = 30000;
 const unsigned long eventBacklightScree=60000;
-unsigned long previousTime = 0;
+unsigned long previousTime_T1 = 0,previousTime_T2=0;
 unsigned long prevoiusTime_Backlight=0;
 //-------------------------------------------------------------------------------------------------------
 //-----------------------------------Functions---------------------------------
@@ -180,7 +180,7 @@ lcd.begin(16,2);
 lcd.clear();
 lcd.noCursor();
 lcd.setCursor(0,0);
-lcd.print("   SLC V1.2.8   ");
+lcd.print("   SLC V2.0.0   ");
 delay(1500);
 lcd.clear();
 Wire.begin();
@@ -1614,22 +1614,22 @@ RunWithOutBattery=false;
 void Start_Timer_0_A()
 {
 
-if (currentTime-previousTime>=eventInterval)
-{
+
  //********************************Turn Off loads*******************************
- if(Vin_Battery<Mini_Battery_Voltage && digitalRead(AC_Available)==1 && RunLoadsByBass==0 )
+ if(currentTime-previousTime_T1>=eventInterval_T1 &&Vin_Battery<Mini_Battery_Voltage && digitalRead(AC_Available)==1 && RunLoadsByBass==0 )
 {
 SecondsRealTime=0;
 digitalWrite(Relay_L_Solar,0);
+previousTime_T1=millis();
 }
 
-if(Vin_Battery<Mini_Battery_Voltage_T2 && digitalRead(AC_Available)==1  && RunLoadsByBass==0)
+if(currentTime-previousTime_T2>=eventInterval_T2 && Vin_Battery<Mini_Battery_Voltage_T2 && digitalRead(AC_Available)==1  && RunLoadsByBass==0)
 {
 SecondsRealTime=0;
 digitalWrite(Relay_L_Solar_2,0);
+previousTime_T2=millis();
 }
-previousTime = millis(); 
-} // end if millis 
+
 } //end start timer
 //-----------------------------------------Turn Off Loads Grid----------------------------------
 void TurnLoadsOffWhenGridOff()
