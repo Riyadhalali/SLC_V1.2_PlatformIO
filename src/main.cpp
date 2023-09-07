@@ -93,7 +93,7 @@ char LoadsAlreadySwitchedOFF=0;
 uint16_t Full_Seconds;
 unsigned long currentTime = 0;
 const unsigned long eventInterval_T1 = 25000,eventInterval_T2 = 30000;
-const unsigned long eventBacklightScree=60000;
+const unsigned long eventBacklightScree=120000;
 unsigned long previousTime_T1 = 0,previousTime_T2=0;
 unsigned long prevoiusTime_Backlight=0;
 //-------------------------------------------------------------------------------------------------------
@@ -945,12 +945,12 @@ while (digitalRead(Increment) == 1 || digitalRead(Decrement)==1)
 {
 if (digitalRead(Increment)==1 )
 {
-delay(200);
+delay(100);
 set_ds1307_day++;
 }
 if (digitalRead(Decrement)==1)
 {
-delay(200);
+delay(100);
 set_ds1307_day--;
 }
 //-> perfect
@@ -974,12 +974,12 @@ while (digitalRead(Increment) == 1 || digitalRead(Decrement)==1)
 {
 if (digitalRead(Increment)==1 )
 {
-delay(200);
+delay(100);
 set_ds1307_month++;
 }
 if (digitalRead(Decrement)==1)
 {
-delay(200);
+delay(100);
 set_ds1307_month--;
 }
 //-> perfect
@@ -1004,12 +1004,12 @@ while (digitalRead(Increment) == 1 || digitalRead(Decrement)==1)
 {
 if (digitalRead(Increment)==1 )
 {
-delay(200);
+delay(100);
 set_ds1307_year++;
 }
 if (digitalRead(Decrement)==1)
 {
-delay(200);
+delay(100);
 set_ds1307_year--;
 }
 //-> perfect
@@ -1330,8 +1330,8 @@ StartLoadsVoltage=52.0;
 Mini_Battery_Voltage_T2=50.0,
 StartLoadsVoltage_T2=53.0;
 }
-startupTIme_1 =180;
-startupTIme_2=240;
+startupTIme_1 =90;
+startupTIme_2=120;
 //*****************timer 1****************
 EEPROM.write(0,8);  // writing start hours
 EEPROM.write(1,0);    // writing  start minutes
