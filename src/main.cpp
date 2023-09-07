@@ -91,6 +91,11 @@ char RunOnBatteryVoltageMode=0;
 bool UPSMode=0;       // i made ups mode and upo mode in same variable
 char LoadsAlreadySwitchedOFF=0;
 uint16_t Full_Seconds;
+unsigned long currentTime = 0;
+const unsigned long eventInterval = 25000;
+const unsigned long eventBacklightScree=60000;
+unsigned long previousTime = 0;
+unsigned long prevoiusTime_Backlight=0;
 //-------------------------------------------------------------------------------------------------------
 //-----------------------------------Functions---------------------------------
 void EEPROM_Load();
@@ -213,7 +218,7 @@ if (digitalRead(AC_Available)==1 && Timer_2_isOn==0 && RunLoadsByBass==0 && RunO
 //AcBuzzerActiveTimes=0; // make buzzer va  riable zero to get activated once again
 ///old_timer_2=ReadMinutes();   // time must be updated after grid is off
 SecondsRealTime=0;
-digitalWrite(Relay_L_Solar,0);
+digitalWrite(Relay_L_Solar_2,0);
 
 }
 
@@ -224,7 +229,7 @@ SecondsRealTime=0;
 SecondsRealTimePv_ReConnect_T1=0;
 SecondsRealTimePv_ReConnect_T2=0;
 digitalWrite(Relay_L_Solar,0);
-digitalWrite(Relay_L_Solar,0);
+digitalWrite(Relay_L_Solar_2,0);
 
 }
 lcd.clear();
@@ -1488,7 +1493,7 @@ digitalWrite(Relay_L_Solar_2,0); // relay off
 //-------------------------Bypass System----------------------------------------
 if(digitalRead(AC_Available)==0 &&  VoltageProtectionEnable==0 && UPSMode==0 )   // voltage protector is not enabled
 {
-delay(300);     // for error to get one seconds approxmiallty
+delay(250);     // for error to get one seconds approxmiallty
 SecondsRealTime++;
 
 if(SecondsRealTime >= startupTIme_1 && digitalRead(AC_Available)==0)
@@ -1507,10 +1512,10 @@ digitalWrite(Relay_L_Solar_2,1);
 //-------------------------Bypass Mode Upo Mode---------------------------------
  if(digitalRead(AC_Available)==0 && UPSMode==1 )   // voltage protector is not enabled
 {
-delay(300);       // for error to get one seconds approxmiallty
+delay(250);       // for error to get one seconds approxmiallty
 SecondsRealTime++;
 
-if( AC_Available==0 && LoadsAlreadySwitchedOFF==0)
+if( digitalRead(AC_Available)==0 && LoadsAlreadySwitchedOFF==0)
 {
 LoadsAlreadySwitchedOFF=1;
 digitalWrite(Relay_L_Solar,0);
@@ -1582,14 +1587,14 @@ if (  SecondsRealTimePv_ReConnect_T2 > startupTIme_2) digitalWrite(Relay_L_Solar
 if (Vin_Battery<Mini_Battery_Voltage &&  digitalRead(AC_Available)==1  && RunWithOutBattery==false )
 {
 SecondsRealTimePv_ReConnect_T1=0;
-//Start_Timer_0_A();         // give some time for battery voltage
+Start_Timer_0_A();         // give some time for battery voltage
 }
 
 //--Turn Load off when battery Voltage  is Low and AC Not available and Bypass is enabled
 if (Vin_Battery<Mini_Battery_Voltage_T2 &&  digitalRead(AC_Available)==1 && RunWithOutBattery==false )
 {
 SecondsRealTimePv_ReConnect_T2=0;
-//Start_Timer_0_A();         // give some time for battery voltage
+Start_Timer_0_A();         // give some time for battery voltage
 }
 }// end of check timers
 //------------------------Auto program For battery------------------------------
@@ -1605,7 +1610,71 @@ else
 RunWithOutBattery=false;
 }
 }
-//-----------------------------------------Main Loop--------------------------------------------
+//----------------------------------------Start Timer-+-----------------------------------------
+void Start_Timer_0_A()
+{
+
+if (currentTime-previousTime>=eventInterval)
+{
+ //********************************Turn Off loads*******************************
+ if(Vin_Battery<Mini_Battery_Voltage && digitalRead(AC_Available)==1 && RunLoadsByBass==0 )
+{
+SecondsRealTime=0;
+digitalWrite(Relay_L_Solar,0);
+}
+
+if(Vin_Battery<Mini_Battery_Voltage_T2 && digitalRead(AC_Available)==1  && RunLoadsByBass==0)
+{
+SecondsRealTime=0;
+digitalWrite(Relay_L_Solar_2,0);
+}
+previousTime = millis(); 
+} // end if millis 
+} //end start timer
+//-----------------------------------------Turn Off Loads Grid----------------------------------
+void TurnLoadsOffWhenGridOff()
+{
+
+if(digitalRead(AC_Available)==1 && Timer_isOn==0 && RunLoadsByBass==0  && RunOnBatteryVoltageMode==0)
+{
+SecondsRealTime=0;
+digitalWrite(Relay_L_Solar,0);
+
+}
+
+if (digitalRead(AC_Available)==1&& Timer_2_isOn==0 && RunLoadsByBass==0 && RunOnBatteryVoltageMode==0)  // it must be   Timer_2_isOn==0    but because of error in loading eeprom value
+{
+SecondsRealTime=0;
+digitalWrite(Relay_L_Solar_2,0);
+
+}
+
+//-> upo mode
+if (digitalRead(AC_Available)==1 &&  RunLoadsByBass==0 && UPSMode==1 && LoadsAlreadySwitchedOFF==1)
+{
+LoadsAlreadySwitchedOFF=0;
+SecondsRealTime=0;
+SecondsRealTimePv_ReConnect_T1=0;
+SecondsRealTimePv_ReConnect_T2=0;
+digitalWrite(Relay_L_Solar_2,0);
+digitalWrite(Relay_L_Solar,0);
+}
+}
+//-----------------------------------------Turn Off Backlight---------------------------------
+void TurnOffBacklight()
+{
+if (currentTime-prevoiusTime_Backlight>= eventBacklightScree)
+{
+  digitalWrite(Backlight,0);
+  lcd.begin(16,2);
+  lcd.clear();
+  lcd.noCursor();
+  lcd.setCursor(0,0); 
+  prevoiusTime_Backlight=millis();
+}
+
+}
+//---------------------------------------MAIN LOOP-------------------------------------------------
 void setup() {
   // put your setup code here, to run once:
   Config();
@@ -1615,14 +1684,17 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  currentTime=millis();
   CheckForSet(); // done 
   RunTimersNowCheck(); // done 
-  CheckSystemBatteryMode();
+  CheckSystemBatteryMode();  // done
   AutoRunWithOutBatteryProtection();
   CheckForTimerActivationInRange();  // done
   CheckForTimerActivationOutRange();  // done
-  Check_Timers();
   Screen_1();  // done 
+  Check_Timers();  // done
+  TurnLoadsOffWhenGridOff();  // done
+  TurnOffBacklight();
   delay(50);
    
 }
