@@ -131,7 +131,7 @@ void Stop_Timer();
 void ReadPV_Voltage();
 void SetLowPV_Voltage();
 void RestoreFactorySettings();
-void EEPROM_FactorySettings();
+void EEPROM_FactorySettings(char period);
 void Start_Timer_2_B();   // timer for updating screen
 void Start_Timer_0_A();  // timer for pv voltage to shutdown
 void Stop_Timer_0();
@@ -1174,6 +1174,196 @@ EEPROM.get(26,startupTIme_2);
 EEPROM.get(12,Mini_Battery_Voltage_T2);
 EEPROM.get(20,StartLoadsVoltage_T2);
 }
+//------------------------------------------RunTimersCheckNow---------------------------------------
+void RunTimersNowCheck()
+{
+if(digitalRead(Exit)==1 && digitalRead(Increment)==0 && digitalRead(Decrement)==0 && digitalRead(Set)==1)
+{
+//Backlight=1;
+LCD_ReConfig();
+//UpdateScreenTime=0; // if user pressed the button zero counter of dipslay backlight
+}
+//-----------------------------Bypass Mode -------------------------------------
+if(digitalRead(Increment)==1 && digitalRead(Exit)==0)
+{
+//Backlight=1;
+LCD_ReConfig();
+//UpdateScreenTime=0; // if user pressed the button zero counter of dipslay backlight
+delay(2500);
+if (digitalRead(Increment)==1 && digitalRead(Exit)==0)
+{
+delay(2500);
+if (digitalRead(Increment)==1 && digitalRead(Exit)==0)
+{
+RunLoadsByBass++;
+if (  RunLoadsByBass==1 ) digitalWrite(Relay_L_Solar,1);
+if (RunLoadsByBass>=2 )
+{
+digitalWrite(Relay_L_Solar_2,1);
+}
+}
+}
+}
+//---------------------------------Reset to Summer time-------------------------
+if (digitalRead(Increment)==1 && digitalRead(Exit)==1 && digitalRead(Decrement)==0)      // first
+{
+//Backlight=1;
+LCD_ReConfig();
+//UpdateScreenTime=0; // if user pressed the button zero counter of dipslay backlight
+delay(1000);
+if ( digitalRead(Increment)==1 && digitalRead(Exit)==1 && digitalRead(Decrement)==0)
+{
+delay(1000);
+EEPROM_FactorySettings(1);        // summer time
+delay(100);
+EEPROM_Load();    // read the new values from epprom
+lcd.setCursor(0,1);
+lcd.print("Reset Factory");
+delay(1000);
+lcd.clear();
+}
+}
+//-----------------RunOnBatteryVoltageMode--------------------------------------
+if (digitalRead(Increment)==0 && digitalRead(Exit)==1 && digitalRead(Decrement)==1)      // first
+{
+LCD_ReConfig();
+delay(2000);
+if ( digitalRead(Increment)==0 && digitalRead(Exit)==1 && digitalRead(Decrement)==1)
+{
+//-> activate run on battery voltage
+//RunOnBatteryVoltageMode=~RunOnBatteryVoltageMode;
+if(RunOnBatteryVoltageMode == 0 ) RunOnBatteryVoltageMode=1 ; else if (RunOnBatteryVoltageMode==1 ) RunOnBatteryVoltageMode=0;
+if (RunOnBatteryVoltageMode==0 )
+{
+  lcd.setCursor(0,1);
+  lcd.print("Timer Mode");
+}
+ 
+if (RunOnBatteryVoltageMode==1) 
+{
+  lcd.setCursor(0,1);
+  lcd.print("Voltage Mode");
+  } 
+EEPROM.write(28,RunOnBatteryVoltageMode);
+delay(1000);
+lcd.clear();
+}
+}
+
+if(digitalRead(Decrement)==1 && digitalRead(Exit)==0)
+{
+LCD_ReConfig();
+//Backlight=1;
+//UpdateScreenTime=0; // if user pressed the button zero counter of dipslay backlight
+delay(2500);
+if (digitalRead(Decrement)==1 && digitalRead(Exit)==0)
+{
+delay(2500);
+if (digitalRead(Decrement)==1 && digitalRead(Exit)==0)
+{
+TurnOffLoadsByPass=1;
+RunLoadsByBass=0;
+digitalWrite(Relay_L_Solar,0);
+digitalWrite(Relay_L_Solar_2,0);
+lcd.setCursor(15,0);
+lcd.print(" ");
+
+}
+}
+}
+
+//------------------------------UPS Mode --------------------------------
+if (digitalRead(Set)==0 && digitalRead(Decrement)==0 && digitalRead(Increment)==0  && digitalRead(Exit)==1)
+{
+LCD_ReConfig();
+//Backlight=1;
+delay(2000);
+if (digitalRead(Set)==0 && digitalRead(Decrement)==0 && digitalRead(Increment)==0  && digitalRead(Exit)==1)
+{
+if (UPSMode==0)
+{
+UPSMode=1;
+EEPROM.write(29,UPSMode);
+lcd.setCursor(0,1);
+lcd.print("UPS ON");
+delay(1000);
+}
+else
+{
+UPSMode=0;
+EEPROM.write(29,UPSMode);
+lcd.setCursor(0,1);
+lcd.print("UPS OFF");
+delay(1000);
+}
+lcd.clear();
+} // end
+} // end of button
+}  // end function
+//-----------------------------------------EEPROM Factory Settings----------------------------
+void EEPROM_FactorySettings(char period)
+{
+if(period==1) // summer  timer
+{
+if(SystemBatteryMode==12)
+{
+Mini_Battery_Voltage=12.0;
+StartLoadsVoltage=13.0;
+Mini_Battery_Voltage_T2=12.3,
+StartLoadsVoltage_T2=13.2;
+}
+if(SystemBatteryMode==24)
+{
+Mini_Battery_Voltage=24.5;
+StartLoadsVoltage=25.5;
+Mini_Battery_Voltage_T2=25.0,
+StartLoadsVoltage_T2=26.0;
+}
+if(SystemBatteryMode==48)
+{
+Mini_Battery_Voltage=49.0;
+StartLoadsVoltage=52.0;
+Mini_Battery_Voltage_T2=50.0,
+StartLoadsVoltage_T2=53.0;
+}
+startupTIme_1 =180;
+startupTIme_2=240;
+//*****************timer 1****************
+EEPROM.write(0,8);  // writing start hours
+EEPROM.write(1,0);    // writing  start minutes
+EEPROM.write(2,17);    // writing off hours
+EEPROM.write(3,0);    // writing off minutes
+//****************timer 2********************
+EEPROM.write(4,9);  // writing start hours
+EEPROM.write(5,0);    // writing  start minutes
+EEPROM.write(6,17);    // writing off hours
+EEPROM.write(7,0);    // writing off minutes
+EEPROM.write(28,0);    // run on battery voltage mode
+EEPROM.write(29,0); // ups mode
+//**********************************************
+EEPROM.put(8,Mini_Battery_Voltage);
+EEPROM.put(12,Mini_Battery_Voltage_T2);
+EEPROM.put(16,StartLoadsVoltage);
+EEPROM.put(20,StartLoadsVoltage_T2);
+EEPROM.put(24,startupTIme_1);
+EEPROM.put(26,startupTIme_1);
+
+} // end if period
+}
+//----------------------------------------Check Battery System Mode------------------------------
+void CheckSystemBatteryMode()
+{
+if (Vin_Battery>= 35 && Vin_Battery <= 60) SystemBatteryMode=48;
+else if (Vin_Battery>=18 && Vin_Battery <=32) SystemBatteryMode=24;
+else if (Vin_Battery >=1 && Vin_Battery<= 16 ) SystemBatteryMode=12;
+else SystemBatteryMode=24; // take it as default
+}
+//----------------------------------LCD Reconfig()---------------------------------
+void LCD_ReConfig()
+{
+digitalWrite(Backlight,1);
+UpdateScreenTime=0;
+}
 //-----------------------------------------Main Loop--------------------------------------------
 void setup() {
   // put your setup code here, to run once:
@@ -1184,9 +1374,11 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  CheckForSet(); // done 
+  RunTimersNowCheck(); // done 
+  CheckSystemBatteryMode();
   CheckForTimerActivationInRange();  // done
   CheckForTimerActivationOutRange();  // done
-  CheckForSet(); // done still but epprom save
   Screen_1();  // done 
   delay(50);
    
