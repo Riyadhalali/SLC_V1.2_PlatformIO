@@ -420,7 +420,7 @@ if (digitalRead(Increment) == 1 )
 delay(200);
 hours_lcd_1++;
 }
-if (digitalRead(Increment) == 1 )
+if (digitalRead(Decrement) == 1 )
 {
 delay(200);
 hours_lcd_1--;
@@ -489,7 +489,7 @@ if (digitalRead(Increment) == 1 )
 delay(200);
 hours_lcd_2++;
 }
-if (digitalRead(Increment) == 1 )
+if (digitalRead(Decrement) == 1 )
 {
 delay(200);
 hours_lcd_2--;
@@ -558,7 +558,7 @@ if (digitalRead(Increment) == 1 )
 delay(200);
 hours_lcd_timer2_start++;
 }
-if (digitalRead(Increment) == 1 )
+if (digitalRead(Decrement) == 1 )
 {
 delay(200);
 hours_lcd_timer2_start--;
@@ -627,7 +627,7 @@ if (digitalRead(Increment) == 1 )
 delay(200);
 hours_lcd_timer2_stop++;
 }
-if (digitalRead(Increment) == 1 )
+if (digitalRead(Decrement) == 1 )
 {
 delay(200);
 hours_lcd_timer2_stop--;
@@ -650,7 +650,7 @@ delay(500);
 while (digitalRead(Set)==1 )
 {
 lcd.setCursor(0,0);
-lcd.print("[5]  T1");
+lcd.print("[5] T1");
 dtostrf(Mini_Battery_Voltage,4,1,txt);
 lcd.setCursor(7,0);
 lcd.print(txt);
@@ -686,7 +686,7 @@ delay(500);
 while (digitalRead(Set)==1 )
 {
 lcd.setCursor(0,0);
-lcd.print("[5]  T2");
+lcd.print("[5] T2");
 dtostrf(Mini_Battery_Voltage_T2,4,1,txt);
 lcd.setCursor(7,0);
 lcd.print(txt);
@@ -726,7 +726,7 @@ delay(500);
 while (digitalRead(Set)==1 )
 {
 lcd.setCursor(0,0);
-lcd.print("[6]  T1");
+lcd.print("[6] T1");
 dtostrf(StartLoadsVoltage,4,1,txt);
 lcd.setCursor(7,0);
 lcd.print(txt);
@@ -761,7 +761,7 @@ delay(500);
 while (digitalRead(Set)==1 )
 {
 lcd.setCursor(0,0);
-lcd.print("[6]  T2");
+lcd.print("[6] T2");
 dtostrf(StartLoadsVoltage_T2,4,1,txt);
 lcd.setCursor(7,0);
 lcd.print(txt);
@@ -845,7 +845,7 @@ if (digitalRead(Increment) == 1 )
 delay(100);
 startupTIme_2++;
 }
-if (digitalRead(Increment) == 1 )
+if (digitalRead(Decrement) == 1 )
 {
 delay(100);
 startupTIme_2--;
