@@ -151,6 +151,7 @@ void Interrupt_INT1();
 void Read_Time();
 unsigned short ReadMinutes();
 unsigned short ReadHours();
+void AutoRunWithOutBatteryProtection();
 
 //---------------------------------------------------------------------------------------
 void Gpio_Init()
@@ -250,8 +251,6 @@ else
   lcd.print("Voltage Mode");
 
 }
-
-
 Read_Time();
 Read_Battery();
 CalculateAC();
@@ -413,7 +412,7 @@ if (digitalRead(Exit)==1 )
 break;     //break out of the while loop
 }
  //-> to make sure that the value will never be changed until the user press increment or decrement
-while (digitalRead(Increment) == 1 || digitalRead(Increment) == 1 )
+while (digitalRead(Increment) == 1 || digitalRead(Decrement) == 1 )
 {
 if (digitalRead(Increment) == 1 )
 {
@@ -482,7 +481,7 @@ if (digitalRead(Exit)==1 )
 break;     //break out of the while loop
 }
  //-> to make sure that the value will never be changed until the user press increment or decrement
-while (digitalRead(Increment) == 1 || digitalRead(Increment) == 1 )
+while (digitalRead(Increment) == 1 || digitalRead(Decrement) == 1 )
 {
 if (digitalRead(Increment) == 1 )
 {
@@ -551,7 +550,7 @@ if (digitalRead(Exit)==1 )
 break;     //break out of the while loop
 }
  //-> to make sure that the value will never be changed until the user press increment or decrement
-while (digitalRead(Increment) == 1 || digitalRead(Increment) == 1 )
+while (digitalRead(Increment) == 1 || digitalRead(Decrement) == 1 )
 {
 if (digitalRead(Increment) == 1 )
 {
@@ -620,7 +619,7 @@ if (digitalRead(Exit)==1 )
 break;     //break out of the while loop
 }
  //-> to make sure that the value will never be changed until the user press increment or decrement
-while (digitalRead(Increment) == 1 || digitalRead(Increment) == 1 )
+while (digitalRead(Increment) == 1 || digitalRead(Decrement) == 1 )
 {
 if (digitalRead(Increment) == 1 )
 {
@@ -812,12 +811,12 @@ while (digitalRead(Increment) == 1 || digitalRead(Decrement)==1)
 {
 if (digitalRead(Increment)==1 )
 {
-delay(100);
+delay(50);
 startupTIme_1++;
 }
 if (digitalRead(Decrement)==1)
 {
-delay(100);
+delay(50);
 startupTIme_1--;
 }
 //-> perfect
@@ -838,16 +837,16 @@ if (digitalRead(Exit)==1 )
 break;     //break out of the while loop
 }
  //-> to make sure that the value will never be changed until the user press increment or decrement
-while (digitalRead(Increment) == 1 || digitalRead(Increment) == 1 )
+while (digitalRead(Increment) == 1 || digitalRead(Decrement) == 1 )
 {
 if (digitalRead(Increment) == 1 )
 {
-delay(100);
+delay(50);
 startupTIme_2++;
 }
 if (digitalRead(Decrement) == 1 )
 {
-delay(100);
+delay(50);
 startupTIme_2--;
 }
 
@@ -1346,7 +1345,7 @@ EEPROM.put(12,Mini_Battery_Voltage_T2);
 EEPROM.put(16,StartLoadsVoltage);
 EEPROM.put(20,StartLoadsVoltage_T2);
 EEPROM.put(24,startupTIme_1);
-EEPROM.put(26,startupTIme_1);
+EEPROM.put(26,startupTIme_2);
 
 } // end if period
 }
@@ -1364,6 +1363,248 @@ void LCD_ReConfig()
 digitalWrite(Backlight,1);
 UpdateScreenTime=0;
 }
+//---------------------------------Check Time Occurred ON------------------------------------------
+ char CheckTimeOccuredOn(char seconds_required, char minutes_required,char hours_required)
+ {
+	DateTime now = rtc.now();
+
+	if (now.hour()==hours_required && now.minute()==minutes_required)
+	{
+	return 1;
+	}
+	else {
+		return 0;
+	}
+ }
+ //---------------------------------Check Time Occured OFF----------------------------------------
+ char CheckTimeOccuredOff(char seconds_required, char minutes_required,char hours_required)
+ {
+	DateTime now = rtc.now();
+
+	if (now.hour()==hours_required && now.minute()==minutes_required)
+	{
+	return 1;
+	}
+	else {
+		return 0;
+	}
+ }
+//---------------------------------Check Timers-------------------------------------------------
+void Check_Timers()
+{
+if(RunOnBatteryVoltageMode==0)
+{
+//-> timer start
+matched_timer_1_start=CheckTimeOccuredOn(seconds_lcd_1,minutes_lcd_1,hours_lcd_1);
+matched_timer_1_stop=CheckTimeOccuredOff(seconds_lcd_2,minutes_lcd_2,hours_lcd_2);
+matched_timer_2_start=CheckTimeOccuredOn(seconds_lcd_timer2_start,minutes_lcd_timer2_start,hours_lcd_timer2_start);
+matched_timer_2_stop=CheckTimeOccuredOff(seconds_lcd_timer2_stop,minutes_lcd_timer2_stop,hours_lcd_timer2_stop);
+//---------------------------- Timer 1 -----------------------------------------
+//-> turn Load On
+if (matched_timer_1_start==1)
+{
+Timer_isOn=1;
+TurnOffLoadsByPass=0;
+
+//-> when grid is available and timer is on after grid so access the condition to active timer after grid is off
+if (digitalRead(AC_Available)==1 && Timer_Enable==1  && Vin_Battery >= StartLoadsVoltage && RunWithOutBattery==false )
+{
+digitalWrite(Relay_L_Solar,1);
+}
+//-> if run with out battery is selected
+if (digitalRead(AC_Available)==1 && Timer_Enable==1  && RunWithOutBattery==true )
+{
+digitalWrite(Relay_L_Solar,1);
+}
+} // end if ac_available
+//-> Turn Load off
+//******************************************************************************
+if (matched_timer_1_stop==1)
+{
+Timer_isOn=0;        // to continue the timer after breakout the timer when grid is available
+///EEPROM_write(0x49,0);        //- save it to eeprom if power is cut
+//-> when grid is available and timer is on after grid so access the condition to active timer after grid is off
+if (digitalRead(AC_Available)==1 && Timer_Enable==1  &&  RunWithOutBattery==false  )
+{
+//for the turn off there is no need for delay
+SecondsRealTimePv_ReConnect_T1=0;
+digitalWrite(Relay_L_Solar,0); // relay off
+
+}
+if (digitalRead(AC_Available)==1 && Timer_Enable==1  && RunWithOutBattery==true  )
+{
+//for the turn off there is no need for delay
+SecondsRealTimePv_ReConnect_T1=0;
+digitalWrite(Relay_L_Solar,0); // relay off
+}
+}
+//}// end if of ac_available
+//-------------------------- Timer 1 End----------------------------------------
+//------------------------- Timer 2 Start---------------------------------------
+if (matched_timer_2_start==1)
+{
+Timer_2_isOn=1;
+TurnOffLoadsByPass=0;     // this variable just for if user shutdown loads and don't want to reactivated so it will be zeroed until next timer
+///EEPROM_write(0x50,1);        //- save it to eeprom if power is cut
+//-> when grid is available and timer is on after grid so access the condition to active timer after grid is off
+if (digitalRead(AC_Available)==1 && Timer_Enable==1  && Vin_Battery >= StartLoadsVoltage_T2 && RunWithOutBattery==false)
+{
+digitalWrite(Relay_L_Solar_2,1);
+
+}
+
+if (digitalRead(AC_Available)==1 && Timer_Enable==1  && RunWithOutBattery==true)
+{
+digitalWrite(Relay_L_Solar_2,1);
+}
+
+} // end if ac_available
+
+
+if (matched_timer_2_stop==1)
+{
+Timer_2_isOn=0;        // to continue the timer after breakout the timer when grid is available
+///EEPROM_write(0x50,0);        //- save it to eeprom if power is cut
+//-> when grid is available and timer is on after grid so access the condition to active timer after grid is off
+if (digitalRead(AC_Available)==1  && Timer_Enable==1 && RunWithOutBattery==false )
+{
+///SolarOnGridOff_2=0; // to enter once again in the interrupt
+//for the turn off there is no need for delay
+digitalWrite(Relay_L_Solar_2,0);
+SecondsRealTimePv_ReConnect_T2=0;
+
+}
+
+if (digitalRead(AC_Available)==1 && Timer_Enable==1  && RunWithOutBattery==true )
+{
+SecondsRealTimePv_ReConnect_T2=0;
+digitalWrite(Relay_L_Solar_2,0); // relay off 
+}
+
+} // end match timer stop
+} //end batteryvoltagemode if
+
+//*******************************************************************************
+//-------------------------Bypass System----------------------------------------
+if(digitalRead(AC_Available)==0 &&  VoltageProtectionEnable==0 && UPSMode==0 )   // voltage protector is not enabled
+{
+delay(300);     // for error to get one seconds approxmiallty
+SecondsRealTime++;
+
+if(SecondsRealTime >= startupTIme_1 && digitalRead(AC_Available)==0)
+{
+
+digitalWrite(Relay_L_Solar,1);
+}
+if(SecondsRealTime >= startupTIme_2 && digitalRead(AC_Available)==0)
+{
+
+digitalWrite(Relay_L_Solar_2,1);
+}
+
+} // end function of voltage protector
+
+//-------------------------Bypass Mode Upo Mode---------------------------------
+ if(digitalRead(AC_Available)==0 && UPSMode==1 )   // voltage protector is not enabled
+{
+delay(300);       // for error to get one seconds approxmiallty
+SecondsRealTime++;
+
+if( AC_Available==0 && LoadsAlreadySwitchedOFF==0)
+{
+LoadsAlreadySwitchedOFF=1;
+digitalWrite(Relay_L_Solar,0);
+digitalWrite(Relay_L_Solar_2,0);
+}
+if(SecondsRealTime >= startupTIme_1 && digitalRead(AC_Available)==0 && LoadsAlreadySwitchedOFF==1 )
+{
+digitalWrite(Relay_L_Solar,1);
+}
+if(SecondsRealTime >= startupTIme_2 && digitalRead(AC_Available)==0 && LoadsAlreadySwitchedOFF==1 )
+{
+digitalWrite(Relay_L_Solar_2,1);
+}
+} // end function of voltage protector
+//------------------------Functions for reactiving timers------------------------
+/*
+ these function is used for reactiving timers when grid available in the same timer is on or off
+*/
+//-> if the  ac is shutdown and timer is steel in the range of being on  so reactive timer 1
+if (digitalRead(AC_Available)==1 && Timer_isOn==1 && Vin_Battery >= StartLoadsVoltage && RunWithOutBattery==false && TurnOffLoadsByPass==0 && RunOnBatteryVoltageMode ==0 )
+{
+
+SecondsRealTimePv_ReConnect_T1++;
+delay(200);
+if (  SecondsRealTimePv_ReConnect_T1 > startupTIme_1)    digitalWrite(Relay_L_Solar,1);
+
+}
+if (digitalRead(AC_Available)==1 && Timer_isOn==1  && RunWithOutBattery==true && TurnOffLoadsByPass==0 && RunOnBatteryVoltageMode ==0 )
+{
+SecondsRealTimePv_ReConnect_T1++;
+delay(200);
+
+if (  SecondsRealTimePv_ReConnect_T1 > startupTIme_1) digitalWrite(Relay_L_Solar,1);
+
+}
+//-> if the  ac is shutdown and timer is steel in the range of being on  so reactive timer 2
+if (digitalRead(AC_Available)==1 && Timer_2_isOn==1 && Vin_Battery >= StartLoadsVoltage_T2 && RunWithOutBattery==false && TurnOffLoadsByPass==0 && RunOnBatteryVoltageMode ==0)     //run with battery
+{
+SecondsRealTimePv_ReConnect_T2++;
+delay(50);
+if (  SecondsRealTimePv_ReConnect_T2 > startupTIme_2)
+ digitalWrite(Relay_L_Solar_2,1);
+}
+
+if ( digitalRead(AC_Available)==1 && Timer_2_isOn==1 &&  RunWithOutBattery==true && TurnOffLoadsByPass==0 && RunOnBatteryVoltageMode ==0)            //run without battery
+{
+SecondsRealTimePv_ReConnect_T2++;
+delay(50);
+if (  SecondsRealTimePv_ReConnect_T2 > startupTIme_2)
+ digitalWrite(Relay_L_Solar_2,1);
+}
+//-------------------------------RunOnBatteryMode-------------------------------
+ if ( digitalRead(AC_Available)==1 && Vin_Battery >= StartLoadsVoltage && RunWithOutBattery==false && TurnOffLoadsByPass==0 && RunOnBatteryVoltageMode ==1 )
+{
+
+SecondsRealTimePv_ReConnect_T1++;
+delay(200);
+if (  SecondsRealTimePv_ReConnect_T1 > startupTIme_1)     digitalWrite(Relay_L_Solar,1);
+}
+
+if ( digitalRead(AC_Available)==1 && Vin_Battery >= StartLoadsVoltage_T2 && RunWithOutBattery==false && TurnOffLoadsByPass==0 && RunOnBatteryVoltageMode ==1)     //run with battery
+{
+SecondsRealTimePv_ReConnect_T2++;
+delay(50);
+if (  SecondsRealTimePv_ReConnect_T2 > startupTIme_2) digitalWrite(Relay_L_Solar_2,1);
+}
+//------------------------------Turn Off Loads----------------------------------
+//--Turn Load off when battery Voltage  is Low and AC Not available and Bypass is enabled
+if (Vin_Battery<Mini_Battery_Voltage &&  digitalRead(AC_Available)==1  && RunWithOutBattery==false )
+{
+SecondsRealTimePv_ReConnect_T1=0;
+//Start_Timer_0_A();         // give some time for battery voltage
+}
+
+//--Turn Load off when battery Voltage  is Low and AC Not available and Bypass is enabled
+if (Vin_Battery<Mini_Battery_Voltage_T2 &&  digitalRead(AC_Available)==1 && RunWithOutBattery==false )
+{
+SecondsRealTimePv_ReConnect_T2=0;
+//Start_Timer_0_A();         // give some time for battery voltage
+}
+}// end of check timers
+//------------------------Auto program For battery------------------------------
+//@this program used for running timers without battery and to be set auto
+void AutoRunWithOutBatteryProtection()
+{
+if (Vin_Battery==0)
+{
+RunWithOutBattery=true;
+}
+else
+{
+RunWithOutBattery=false;
+}
+}
 //-----------------------------------------Main Loop--------------------------------------------
 void setup() {
   // put your setup code here, to run once:
@@ -1377,8 +1618,10 @@ void loop() {
   CheckForSet(); // done 
   RunTimersNowCheck(); // done 
   CheckSystemBatteryMode();
+  AutoRunWithOutBatteryProtection();
   CheckForTimerActivationInRange();  // done
   CheckForTimerActivationOutRange();  // done
+  Check_Timers();
   Screen_1();  // done 
   delay(50);
    
