@@ -3,6 +3,7 @@
 #include <LiquidCrystal.h>
 #include <RTClib.h>
 #include <Wire.h>
+#include <EEPROM.h>
 //----------------------------LCD--------------------
 //const int rs = 8, en =9, d4 = 10, d5 = 11, d6 = 12, d7 = 13;
 const int rs = 8, en =9, d4 = 10, d5 = 11, d6 = 12, d7 = 13;
@@ -25,9 +26,9 @@ char t[32];
 //unsigned short old_time_compare_pv,old_time_update_pv,old_time_screen_1=0,old_time_screen_2=0; // to async
 char set_status=0;    //variable for the set button state
 char txt[32];
-char seconds_lcd_1=0,minutes_lcd_1=0,hours_lcd_1=8;
-char seconds_lcd_2=0,minutes_lcd_2=0,hours_lcd_2=17;
-char hours_lcd_timer2_start=9,hours_lcd_timer2_stop=17,seconds_lcd_timer2_start=0;
+char seconds_lcd_1=0,minutes_lcd_1=0,hours_lcd_1=0;
+char seconds_lcd_2=0,minutes_lcd_2=0,hours_lcd_2=0;
+char hours_lcd_timer2_start=0,hours_lcd_timer2_stop=0,seconds_lcd_timer2_start=0;
 char minutes_lcd_timer2_start=0,minutes_lcd_timer2_stop=0,seconds_lcd_timer2_stop=0;
 char Relay_State; // variable for toggling relay
 char set_ds1307_minutes=12,set_ds1307_hours=12,set_ds1307_seconds=0,set_ds1307_day=0,set_ds1307_month=0;
@@ -178,6 +179,7 @@ delay(1500);
 lcd.clear();
 Wire.begin();
 rtc.begin();
+//EEPROM.begin();  
 }
 //----------------------------------Config Interrupts-----------------------------------
 void Config_Interrupts()
@@ -430,9 +432,8 @@ Timer_isOn=0; //
 SecondsRealTimePv_ReConnect_T1=0;
 } // end while increment
 } // end first while
-
-///EEPROM_Write(0x00,hours_lcd_1); // save hours 1 timer tp eeprom
-///EEPROM_Write(0x01,minutes_lcd_1); // save minutes 1 timer tp eeprom
+EEPROM.write(0x00,hours_lcd_1); // save hours 1 timer tp eeprom
+EEPROM.write(0x01,minutes_lcd_1); // save minutes 1 timer tp eeprom
 }
 //--------------------------------Set Timer 1 Off ------------------------------
 void SetTimerOff_1()
@@ -500,8 +501,8 @@ Timer_isOn=0; //
 SecondsRealTimePv_ReConnect_T1=0;
 } // end while increment
 } // end first while
-//EEPROM_Write(0x03,hours_lcd_2); // save hours off  timer_1 to eeprom
-//EEPROM_Write(0x04,minutes_lcd_2); // save minutes off timer_1 to eeprom
+EEPROM.write(0x03,hours_lcd_2); // save hours off  timer_1 to eeprom
+EEPROM.write(0x04,minutes_lcd_2); // save minutes off timer_1 to eeprom
 }
 //---------------------------------Set Timer 2--------------------------------
 void SetTimerOn_2()
@@ -569,8 +570,8 @@ Timer_2_isOn=0; //
 SecondsRealTimePv_ReConnect_T2=0;
 } // end while increment
 } // end first while
-//EEPROM_Write(0x03,hours_lcd_2); // save hours off  timer_1 to eeprom
-//EEPROM_Write(0x04,minutes_lcd_2); // save minutes off timer_1 to eeprom
+EEPROM.write(0x18,hours_lcd_timer2_start); // save hours 1 timer tp eeprom
+EEPROM.write(0x19,minutes_lcd_timer2_start); // save minutes 1 timer tp eeprom
 }
 //-----------------------------Set Timer 2 off-----------------------------
 void SetTimerOff_2()
@@ -638,8 +639,8 @@ Timer_2_isOn=0; //
 SecondsRealTimePv_ReConnect_T2=0;
 } // end while increment
 } // end first while
-//EEPROM_Write(0x03,hours_lcd_2); // save hours off  timer_1 to eeprom
-//EEPROM_Write(0x04,minutes_lcd_2); // save minutes off timer_1 to eeprom
+EEPROM.write(0x20,hours_lcd_timer2_stop); // save hours off  timer_1 to eeprom
+EEPROM.write(0x21,minutes_lcd_timer2_stop); // save minutes off timer_1 to eeprom
 }
 //--------------------------Set Battery Voltage---------------------------------
 void SetLowBatteryVoltage()
@@ -679,6 +680,7 @@ if (Mini_Battery_Voltage<0) Mini_Battery_Voltage=0;
 } // end while increment and decrement
 }
 //- save to eeporm
+EEPROM.put(0x30,Mini_Battery_Voltage);
 //-------------------------------------T2-----------------------------------------
 delay(500);
 while (digitalRead(Set)==1 )
@@ -714,6 +716,7 @@ if (Mini_Battery_Voltage_T2<0) Mini_Battery_Voltage_T2=0;
 } // end while increment and decrement
 }
 //-> save to eepprom
+EEPROM.put(0x51,Mini_Battery_Voltage_T2);
 } //- end set low voltage
 //-----------------------------------Set Start Voltage----------------------------------------------
 void SetStartUpLoadsVoltage()
@@ -752,6 +755,7 @@ if (StartLoadsVoltage<0)     StartLoadsVoltage=0;
 } // end while increment and decrement
 }
 //- save to eeporm
+EEPROM.put(0x40,StartLoadsVoltage);
 //-------------------------------------T2-----------------------------------------
 delay(500);
 while (digitalRead(Set)==1 )
@@ -786,6 +790,7 @@ if (StartLoadsVoltage_T2<0)     StartLoadsVoltage_T2=0;
 } // end while increment and decrement
 }
 //-> save to eepprom
+EEPROM.put(0x55,StartLoadsVoltage_T2);
 } // end startupvoltage
 //------------------------------------ Startup Timer 1 -----------------------------------------
 void Startup_Timers()
@@ -794,7 +799,7 @@ lcd.clear();
 delay(500);
 while (digitalRead(Set)==1 )
 {
-sprintf((char*)txt,"[7] T1  %02d  S",startupTIme_1);
+sprintf((char*)txt,"[7] T1  %03d  S",startupTIme_1);
 lcd.setCursor(0,0);
 lcd.print(txt);
 if (digitalRead(Exit)==1 )
@@ -807,25 +812,25 @@ while (digitalRead(Increment) == 1 || digitalRead(Decrement)==1)
 {
 if (digitalRead(Increment)==1 )
 {
-delay(200);
+delay(100);
 startupTIme_1++;
 }
 if (digitalRead(Decrement)==1)
 {
-delay(200);
+delay(100);
 startupTIme_1--;
 }
 //-> perfect
 if (startupTIme_1>900)    startupTIme_1=0;
 if (startupTIme_1<0) startupTIme_1=0;
-
 } // end while increment and decrement
 } // end first while
+EEPROM.put(0x45,startupTIme_1);
 //******************************************************************************
 delay(500);     //read time for state
 while (digitalRead(Set)==1 )
 {
-sprintf((char*)txt,"[7] T2  %02d  S",startupTIme_2);
+sprintf((char*)txt,"[7] T2  %03d  S",startupTIme_2);
 lcd.setCursor(0,0);
 lcd.print(txt);
 if (digitalRead(Exit)==1 )
@@ -837,12 +842,12 @@ while (digitalRead(Increment) == 1 || digitalRead(Increment) == 1 )
 {
 if (digitalRead(Increment) == 1 )
 {
-delay(200);
+delay(100);
 startupTIme_2++;
 }
 if (digitalRead(Increment) == 1 )
 {
-delay(200);
+delay(100);
 startupTIme_2--;
 }
 
@@ -850,8 +855,7 @@ if  (startupTIme_2>900) startupTIme_2=0;
 if  (startupTIme_2<0) startupTIme_2=0;
 } // end while increment
 } // end first while
-//EEPROM_Write(0x03,hours_lcd_2); // save hours off  timer_1 to eeprom
-//EEPROM_Write(0x04,minutes_lcd_2); // save minutes off timer_1 to eeprom
+EEPROM.put(0x47,startupTIme_2);
 } // end startup timer
 //------------------------------------Set Time--------------------------------------------------
 void SetDS1307_Time()
@@ -1158,8 +1162,8 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  CheckForTimerActivationInRange();
-  CheckForTimerActivationOutRange();
+  CheckForTimerActivationInRange();  // done
+  CheckForTimerActivationOutRange();  // done
   CheckForSet(); // done still but epprom save
   Screen_1();  // done 
   delay(50);
