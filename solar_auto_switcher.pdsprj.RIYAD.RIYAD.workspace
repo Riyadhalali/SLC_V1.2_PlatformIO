@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding='UTF-8' standalone='yes'?>
 <WORKSPACE>
  <FRAME activewindow="0">
-  <PLACEMENT>2c00000002000000030000000083ffff0083ffffffffffffffffffffd70000001400000027050000da020000</PLACEMENT>
+  <PLACEMENT>2c0000000200000001000000ffffffffffffffffffffffffffffffffd70000001400000027050000da020000</PLACEMENT>
   <WINDOW type="default" module="ISIS">
-   <editor metric="0" gridmajor="25400000" mode="00000020" zoom="-1" scale="66" flipped="0" gridminor="508000" gridmode="32" snapidx="2" snap="254000" xcursor="0" orgmode="0" snaprange="192424">
+   <editor metric="0" gridmajor="25400000" mode="00000000" zoom="-1" scale="73" flipped="0" gridminor="508000" gridmode="32" snapidx="2" snap="254000" xcursor="0" orgmode="0" snaprange="173972">
     <world y1="-19050000" x1="-26670000" y2="19050000" x2="26670000"/>
-    <centre x="9300505" y="4564302"/>
+    <centre x="9119809" y="8684381"/>
     <origin x="0" y="0"/>
    </editor>
   </WINDOW>
@@ -18,9 +18,9 @@
   </editor>
  </MODULE>
  <MODULE name="ISIS">
-  <editor metric="0" gridmajor="25400000" mode="00000020" zoom="-1" scale="66" flipped="0" gridminor="508000" gridmode="32" snapidx="2" snap="254000" xcursor="0" orgmode="0" snaprange="192424">
+  <editor metric="0" gridmajor="25400000" mode="00000000" zoom="-1" scale="73" flipped="0" gridminor="508000" gridmode="32" snapidx="2" snap="254000" xcursor="0" orgmode="0" snaprange="173972">
    <world y1="-19050000" x1="-26670000" y2="19050000" x2="26670000"/>
-   <centre x="9300505" y="4564302"/>
+   <centre x="9119809" y="8684381"/>
    <origin x="0" y="0"/>
   </editor>
  </MODULE>

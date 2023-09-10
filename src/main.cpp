@@ -1,4 +1,24 @@
-
+//-------------------------------------MEMORY MAP----------------------------------------------------
+/*
+hours_lcd_1 : 0 
+minutes_lcd_1 : 1
+hours_lcd_2: 2 
+minutes_lcd_2 : 3
+//-----------------------
+hours_lcd_timer_2_start: 4 
+minutes_lcd_timer_start: 5
+hours_lcd_timer_2_stop: 6
+minutes_lcd_timer_2_stop:7
+Mini_battery_voltage: 8
+mini_battery_voltage_t2: 12
+startup_voltage: 16
+startloadvoltage_t2: 20
+startuptimer_1 : 24
+startuptimer_2: 26
+//----------------------------
+Runonbatteryvoltagemode: 28
+upsmode: 29 
+*/
 #include <Arduino.h>
 #include <LiquidCrystal.h>
 #include <RTClib.h>
@@ -1777,10 +1797,125 @@ WDTCSR = 0x00;
 //asm sei;
 sei();
 }
+//---------------------------------------Check For Params-----------------------------------------
+void CheckForParams()
+{
+//----------------Timer 1 ----------------
+if (hours_lcd_1< 0  || hours_lcd_1 > 23)
+{
+hours_lcd_1=8; 
+EEPROM.write(0,hours_lcd_1);  
+EEPROM_Load();
+}  
+if (minutes_lcd_1< 0  || minutes_lcd_1 > 59)
+{
+minutes_lcd_1=0; 
+EEPROM.write(1,minutes_lcd_1);  
+EEPROM_Load();
+} 
+if (hours_lcd_2< 0  || hours_lcd_2 > 23)
+{
+hours_lcd_2=9; 
+EEPROM.write(2,hours_lcd_2);  
+EEPROM_Load();
+}  
+if (minutes_lcd_2< 0  || minutes_lcd_2 > 59)
+{
+minutes_lcd_2=0; 
+EEPROM.write(3,minutes_lcd_2);  
+EEPROM_Load();
+} 
+//----------------Timer 2 ------------------------
+if (hours_lcd_timer2_start< 0  || hours_lcd_timer2_start > 23)
+{
+hours_lcd_timer2_start=8; 
+EEPROM.write(4,hours_lcd_timer2_start);  
+EEPROM_Load();
+}  
+if (minutes_lcd_timer2_start< 0  || minutes_lcd_timer2_start > 59)
+{
+minutes_lcd_timer2_start=0; 
+EEPROM.write(5,minutes_lcd_timer2_start);  
+EEPROM_Load();
+} 
+if (hours_lcd_timer2_stop< 0  || hours_lcd_timer2_stop > 23)
+{
+hours_lcd_timer2_stop=9; 
+EEPROM.write(6,hours_lcd_timer2_stop);  
+EEPROM_Load();
+}  
+if (minutes_lcd_timer2_stop< 0  || minutes_lcd_timer2_stop > 59)
+{
+minutes_lcd_timer2_stop=0; 
+EEPROM.write(7,minutes_lcd_timer2_stop);  
+EEPROM_Load();
+}
+//---------------------------LOW Voltage------------------------------
+if (Mini_Battery_Voltage< 0  || Mini_Battery_Voltage > 65.0)
+{
+if (SystemBatteryMode==12) Mini_Battery_Voltage=12.0; 
+if (SystemBatteryMode==24) Mini_Battery_Voltage=24.5; 
+if (SystemBatteryMode==48) Mini_Battery_Voltage=49.0; 
+EEPROM.put(8,Mini_Battery_Voltage);
+EEPROM_Load();
+}
+if (Mini_Battery_Voltage_T2< 0  || Mini_Battery_Voltage_T2 > 65.0)
+{
+if (SystemBatteryMode==12) Mini_Battery_Voltage_T2=12.3; 
+if (SystemBatteryMode==24) Mini_Battery_Voltage_T2=25.0; 
+if (SystemBatteryMode==48) Mini_Battery_Voltage_T2=50.0; 
+EEPROM.put(12,Mini_Battery_Voltage_T2);
+EEPROM_Load();
+}
+//--------------------------Start Loads Voltage------------------------
+if (StartLoadsVoltage< 0  || StartLoadsVoltage > 65.0)
+{
+if (SystemBatteryMode==12) StartLoadsVoltage=13.0; 
+if (SystemBatteryMode==24) StartLoadsVoltage=25.5; 
+if (SystemBatteryMode==48) StartLoadsVoltage=52.0; 
+EEPROM.put(16,StartLoadsVoltage);
+EEPROM_Load();
+}
+if (StartLoadsVoltage_T2< 0  || StartLoadsVoltage_T2 > 65.0)
+{
+if (SystemBatteryMode==12) StartLoadsVoltage_T2=13.2; 
+if (SystemBatteryMode==24) StartLoadsVoltage_T2=26.0; 
+if (SystemBatteryMode==48) StartLoadsVoltage_T2=53.0; 
+EEPROM.put(20,StartLoadsVoltage_T2);
+EEPROM_Load();
+}
+//-------------------------Startup Timers--------------------------------
+if (startupTIme_1< 0  || startupTIme_1 > 900)
+{
+startupTIme_1=0; 
+EEPROM.put(24,startupTIme_1);
+EEPROM_Load();
+}
+if (startupTIme_2< 0  || startupTIme_2 > 900)
+{
+startupTIme_2=0; 
+EEPROM.put(26,startupTIme_2);
+EEPROM_Load();
+}
+//----------------------Run On Battery Voltage Mode-------------------------
+if (RunOnBatteryVoltageMode < 0 || RunOnBatteryVoltageMode > 1 )
+{
+  RunOnBatteryVoltageMode=0;
+  EEPROM.write(28,RunOnBatteryVoltageMode);
+  EEPROM_Load();
+}
+//----------------------------UPS Mode------------------------------------
+if (UPSMode < 0 || UPSMode > 1 )
+{
+  UPSMode=0;
+  EEPROM.write(29,UPSMode);
+  EEPROM_Load();
+}
+}
 //---------------------------------------MAIN LOOP-------------------------------------------------
 void setup() {
   // put your setup code here, to run once:
-    Config();
+  Config();
   Config_Interrupts();
   EEPROM_Load();
   Timer_Seconds();
@@ -1788,6 +1923,7 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  CheckForParams();
   CheckForSet(); // done 
   RunTimersNowCheck(); // done 
   CheckSystemBatteryMode();  // done
