@@ -4,6 +4,7 @@
 #include <RTClib.h>
 #include <Wire.h>
 #include <EEPROM.h>
+#include<avr/wdt.h>
 //----------------------------LCD--------------------
 //const int rs = 8, en =9, d4 = 10, d5 = 11, d6 = 12, d7 = 13;
 const int rs = 8, en =9, d4 = 10, d5 = 11, d6 = 12, d7 = 13;
@@ -31,7 +32,7 @@ char seconds_lcd_2=0,minutes_lcd_2=0,hours_lcd_2=0;
 char hours_lcd_timer2_start=0,hours_lcd_timer2_stop=0,seconds_lcd_timer2_start=0;
 char minutes_lcd_timer2_start=0,minutes_lcd_timer2_stop=0,seconds_lcd_timer2_stop=0;
 char Relay_State; // variable for toggling relay
-char set_ds1307_minutes=12,set_ds1307_hours=12,set_ds1307_seconds=0,set_ds1307_day=0,set_ds1307_month=0;
+char set_ds1307_minutes=0,set_ds1307_hours=0,set_ds1307_seconds=0,set_ds1307_day=0,set_ds1307_month=0;
 uint16_t set_ds1307_year=2023;
 char ByPassState=0;    //enabled is default 0 is enabled and 1 is disabled
 float Battery_Voltage,PV_Voltage,Vin_PV,Vin_PV_Old=0,Vin_PV_Present=0;
@@ -73,7 +74,7 @@ unsigned short ReadMinutesMinusOldTimer_1=0;
 unsigned short ReadMinutesMinusOldTimer_2=0;
 unsigned int Timer_Counter_For_Grid_Turn_Off=0;
 char RunTimersNowState=0;
-unsigned int SecondsRealTime=0;         // for holding reading seconds in real time for ac grid and startup timers
+unsigned int SecondsRealTime=0,CutSecondsRealTime_T1=0 , CutSecondsRealTime_T2=0 ;   // for holding reading seconds in real time for ac grid and startup timers
 unsigned int SecondsRealTimePv_ReConnect_T1=0,SecondsRealTimePv_ReConnect_T2=0; // for reactive timers in sequence when timer switch off because off battery and wants to reload
 unsigned int realTimeLoop=0;
 bool RunWithOutBattery=true;
@@ -92,10 +93,9 @@ bool UPSMode=0;       // i made ups mode and upo mode in same variable
 char LoadsAlreadySwitchedOFF=0;
 uint16_t Full_Seconds;
 unsigned long currentTime = 0;
-const unsigned long eventInterval_T1 = 25000,eventInterval_T2 = 30000;
-const unsigned long eventBacklightScree=120000;
-unsigned long previousTime_T1 = 0,previousTime_T2=0;
-unsigned long prevoiusTime_Backlight=0;
+unsigned int CountSecondsRealTime=0;   // for secondsrealtime
+unsigned int CountSecondsRealTimePv_ReConnect_T2=0,CountSecondsRealTimePv_ReConnect_T1=0;
+unsigned int CountCutSecondsRealTime_T1=0,CountCutSecondsRealTime_T2=0; // time for cutting loads off 
 //-------------------------------------------------------------------------------------------------------
 //-----------------------------------Functions---------------------------------
 void EEPROM_Load();
@@ -157,7 +157,9 @@ void Read_Time();
 unsigned short ReadMinutes();
 unsigned short ReadHours();
 void AutoRunWithOutBatteryProtection();
-
+void Timer_Seconds(); // timer for counting seconds 
+void CheckWireTimeout();
+void WDT_Disable();
 //---------------------------------------------------------------------------------------
 void Gpio_Init()
 {
@@ -185,6 +187,8 @@ delay(1500);
 lcd.clear();
 Wire.begin();
 rtc.begin();
+Wire.setWireTimeout(3000,true);   //refe : https://www.fpaynter.com/2020/07/i2c-hangup-bug-cured-miracle-of-miracles-film-at-11/
+Wire.clearWireTimeoutFlag();
 //EEPROM.begin();  
 }
 //----------------------------------Config Interrupts-----------------------------------
@@ -202,21 +206,21 @@ digitalWrite(Backlight,1);
 //-------------------------------When Grid is Turned Off---------------------------------------------------------
 void Interrupt_INT1()
 {
-AcBuzzerActiveTimes=0; // FOR ACTIVING BUZZER ONCE AGAIN
+
  //-> functions for shutting down loads if there is no timers and grid is off
 if(digitalRead(AC_Available)==1 && Timer_isOn==0  && RunLoadsByBass==0 && RunOnBatteryVoltageMode==0)
 {
 //AcBuzzerActiveTimes=0; // make buzzer va  riable zero to get activated once again
 ///old_timer_1=ReadMinutes();  // time must be updated after grid is off
 SecondsRealTime=0;
+CountSecondsRealTime=0;
 digitalWrite(Relay_L_Solar,0);
 
 }
 
 if (digitalRead(AC_Available)==1 && Timer_2_isOn==0 && RunLoadsByBass==0 && RunOnBatteryVoltageMode==0)  // it must be   Timer_2_isOn==0    but because of error in loading eeprom value
 {
-//AcBuzzerActiveTimes=0; // make buzzer va  riable zero to get activated once again
-///old_timer_2=ReadMinutes();   // time must be updated after grid is off
+CountSecondsRealTime=0;
 SecondsRealTime=0;
 digitalWrite(Relay_L_Solar_2,0);
 
@@ -228,15 +232,19 @@ LoadsAlreadySwitchedOFF=0;
 SecondsRealTime=0;
 SecondsRealTimePv_ReConnect_T1=0;
 SecondsRealTimePv_ReConnect_T2=0;
+CountSecondsRealTime=0;
+CountSecondsRealTimePv_ReConnect_T1=0;
+CountSecondsRealTimePv_ReConnect_T2=0;
 digitalWrite(Relay_L_Solar,0);
 digitalWrite(Relay_L_Solar_2,0);
 
 }
-lcd.clear();
+//lcd.clear();
 }
 //-----------------------------------------Screen 1-------------------------------------------------
 void Screen_1()
 {
+  //noInterrupts();
 if (RunLoadsByBass==0) 
 {
   lcd.setCursor(13,0);
@@ -259,6 +267,7 @@ else
 Read_Time();
 Read_Battery();
 CalculateAC();
+//interrupts(); 
 //LCD_CMD(_LCD_RETURN_HOME);    // to keep display in its location
 }
 //--------------------------------------Read Time-----------------------------------
@@ -869,6 +878,9 @@ lcd.clear();
 delay(500);
 set_ds1307_hours=now.hour();
 set_ds1307_minutes=now.minute();
+set_ds1307_day=now.day();
+set_ds1307_month=now.month();
+set_ds1307_year=now.year();
 while (digitalRead(Set)==1 )
 {
 sprintf((char*)txt,"[8] H:%02d-M:%02d",set_ds1307_hours,set_ds1307_minutes);
@@ -900,7 +912,7 @@ if (set_ds1307_hours<0) set_ds1307_hours=0;
 delay(500); 
 while (digitalRead(Set)==1 )
 {
-sprintf((char*)txt,"[8] H:%02d-M:%02d",set_ds1307_hours,set_ds1307_minutes);
+sprintf(txt,"[8] H:%02d-M:%02d",set_ds1307_hours,set_ds1307_minutes);
 lcd.setCursor(0,0);
 lcd.print(txt);
 if (digitalRead(Exit)==1 )
@@ -925,15 +937,13 @@ if (set_ds1307_minutes>59)    set_ds1307_minutes=0;
 if (set_ds1307_minutes<0)     set_ds1307_minutes=0;
 } // end while increment and decrement
 } // end first while
-rtc.adjust(DateTime(2023, 8, 7, set_ds1307_hours, set_ds1307_minutes, 0));
+rtc.adjust(DateTime(set_ds1307_year, set_ds1307_month, set_ds1307_day, set_ds1307_hours, set_ds1307_minutes, 0));
 //-----------------------------------------Set Date-------------------------------------------
 delay(500);
 while (digitalRead(Set)==1 )
 {
-set_ds1307_day=now.day();
-set_ds1307_month=now.month();
-set_ds1307_year=now.year();
-sprintf((char*)txt,"[9] %02d/%02d/%02d",set_ds1307_day,set_ds1307_month,set_ds1307_year);
+
+sprintf(txt,"[9] %02d/%02d/%02d",set_ds1307_day,set_ds1307_month,set_ds1307_year);
 lcd.setCursor(0,0);
 lcd.print(txt);
 if (digitalRead(Exit)==1 )
@@ -1433,6 +1443,7 @@ if (digitalRead(AC_Available)==1 && Timer_Enable==1  &&  RunWithOutBattery==fals
 {
 //for the turn off there is no need for delay
 SecondsRealTimePv_ReConnect_T1=0;
+CountSecondsRealTimePv_ReConnect_T1=0;
 digitalWrite(Relay_L_Solar,0); // relay off
 
 }
@@ -1440,6 +1451,7 @@ if (digitalRead(AC_Available)==1 && Timer_Enable==1  && RunWithOutBattery==true 
 {
 //for the turn off there is no need for delay
 SecondsRealTimePv_ReConnect_T1=0;
+CountSecondsRealTimePv_ReConnect_T1=0;
 digitalWrite(Relay_L_Solar,0); // relay off
 }
 }
@@ -1477,12 +1489,14 @@ if (digitalRead(AC_Available)==1  && Timer_Enable==1 && RunWithOutBattery==false
 //for the turn off there is no need for delay
 digitalWrite(Relay_L_Solar_2,0);
 SecondsRealTimePv_ReConnect_T2=0;
+CountSecondsRealTimePv_ReConnect_T2=0;
 
 }
 
 if (digitalRead(AC_Available)==1 && Timer_Enable==1  && RunWithOutBattery==true )
 {
 SecondsRealTimePv_ReConnect_T2=0;
+CountSecondsRealTimePv_ReConnect_T2=0;
 digitalWrite(Relay_L_Solar_2,0); // relay off 
 }
 
@@ -1491,11 +1505,11 @@ digitalWrite(Relay_L_Solar_2,0); // relay off
 
 //*******************************************************************************
 //-------------------------Bypass System----------------------------------------
-if(digitalRead(AC_Available)==0 &&  VoltageProtectionEnable==0 && UPSMode==0 )   // voltage protector is not enabled
+if(digitalRead(AC_Available)==0 &&  UPSMode==0 )   // voltage protector is not enabled
 {
-delay(250);     // for error to get one seconds approxmiallty
-SecondsRealTime++;
-
+//delay(250);     // for error to get one seconds approxmiallty
+//SecondsRealTime++;
+CountSecondsRealTime=1;
 if(SecondsRealTime >= startupTIme_1 && digitalRead(AC_Available)==0)
 {
 
@@ -1512,11 +1526,12 @@ digitalWrite(Relay_L_Solar_2,1);
 //-------------------------Bypass Mode Upo Mode---------------------------------
  if(digitalRead(AC_Available)==0 && UPSMode==1 )   // voltage protector is not enabled
 {
-delay(250);       // for error to get one seconds approxmiallty
-SecondsRealTime++;
-
+//delay(250);       // for error to get one seconds approxmiallty
+//SecondsRealTime++;
+CountSecondsRealTime=1;
 if( digitalRead(AC_Available)==0 && LoadsAlreadySwitchedOFF==0)
 {
+
 LoadsAlreadySwitchedOFF=1;
 digitalWrite(Relay_L_Solar,0);
 digitalWrite(Relay_L_Solar_2,0);
@@ -1538,15 +1553,17 @@ digitalWrite(Relay_L_Solar_2,1);
 if (digitalRead(AC_Available)==1 && Timer_isOn==1 && Vin_Battery >= StartLoadsVoltage && RunWithOutBattery==false && TurnOffLoadsByPass==0 && RunOnBatteryVoltageMode ==0 )
 {
 
-SecondsRealTimePv_ReConnect_T1++;
-delay(200);
+//SecondsRealTimePv_ReConnect_T1++;
+CountSecondsRealTimePv_ReConnect_T1=1;
+//delay(200);
 if (  SecondsRealTimePv_ReConnect_T1 > startupTIme_1)    digitalWrite(Relay_L_Solar,1);
 
 }
 if (digitalRead(AC_Available)==1 && Timer_isOn==1  && RunWithOutBattery==true && TurnOffLoadsByPass==0 && RunOnBatteryVoltageMode ==0 )
 {
-SecondsRealTimePv_ReConnect_T1++;
-delay(200);
+//econdsRealTimePv_ReConnect_T1++;
+CountSecondsRealTimePv_ReConnect_T1=1;
+//delay(200);
 
 if (  SecondsRealTimePv_ReConnect_T1 > startupTIme_1) digitalWrite(Relay_L_Solar,1);
 
@@ -1554,16 +1571,18 @@ if (  SecondsRealTimePv_ReConnect_T1 > startupTIme_1) digitalWrite(Relay_L_Solar
 //-> if the  ac is shutdown and timer is steel in the range of being on  so reactive timer 2
 if (digitalRead(AC_Available)==1 && Timer_2_isOn==1 && Vin_Battery >= StartLoadsVoltage_T2 && RunWithOutBattery==false && TurnOffLoadsByPass==0 && RunOnBatteryVoltageMode ==0)     //run with battery
 {
-SecondsRealTimePv_ReConnect_T2++;
-delay(50);
+//SecondsRealTimePv_ReConnect_T2++;
+CountSecondsRealTimePv_ReConnect_T2=1;
+//delay(50);
 if (  SecondsRealTimePv_ReConnect_T2 > startupTIme_2)
  digitalWrite(Relay_L_Solar_2,1);
 }
 
 if ( digitalRead(AC_Available)==1 && Timer_2_isOn==1 &&  RunWithOutBattery==true && TurnOffLoadsByPass==0 && RunOnBatteryVoltageMode ==0)            //run without battery
 {
-SecondsRealTimePv_ReConnect_T2++;
-delay(50);
+//SecondsRealTimePv_ReConnect_T2++;
+CountSecondsRealTimePv_ReConnect_T2=1;
+//delay(50);
 if (  SecondsRealTimePv_ReConnect_T2 > startupTIme_2)
  digitalWrite(Relay_L_Solar_2,1);
 }
@@ -1571,29 +1590,35 @@ if (  SecondsRealTimePv_ReConnect_T2 > startupTIme_2)
  if ( digitalRead(AC_Available)==1 && Vin_Battery >= StartLoadsVoltage && RunWithOutBattery==false && TurnOffLoadsByPass==0 && RunOnBatteryVoltageMode ==1 )
 {
 
-SecondsRealTimePv_ReConnect_T1++;
-delay(200);
+//SecondsRealTimePv_ReConnect_T1++;
+CountSecondsRealTimePv_ReConnect_T1=1;
+//delay(200);
 if (  SecondsRealTimePv_ReConnect_T1 > startupTIme_1)     digitalWrite(Relay_L_Solar,1);
 }
 
 if ( digitalRead(AC_Available)==1 && Vin_Battery >= StartLoadsVoltage_T2 && RunWithOutBattery==false && TurnOffLoadsByPass==0 && RunOnBatteryVoltageMode ==1)     //run with battery
 {
-SecondsRealTimePv_ReConnect_T2++;
-delay(50);
+//SecondsRealTimePv_ReConnect_T2++;
+CountSecondsRealTimePv_ReConnect_T2=1;
+//delay(50);
 if (  SecondsRealTimePv_ReConnect_T2 > startupTIme_2) digitalWrite(Relay_L_Solar_2,1);
 }
 //------------------------------Turn Off Loads----------------------------------
 //--Turn Load off when battery Voltage  is Low and AC Not available and Bypass is enabled
 if (Vin_Battery<Mini_Battery_Voltage &&  digitalRead(AC_Available)==1  && RunWithOutBattery==false )
 {
+CountSecondsRealTimePv_ReConnect_T1=0;
 SecondsRealTimePv_ReConnect_T1=0;
+CountCutSecondsRealTime_T1=1;
 Start_Timer_0_A();         // give some time for battery voltage
 }
 
 //--Turn Load off when battery Voltage  is Low and AC Not available and Bypass is enabled
-if (Vin_Battery<Mini_Battery_Voltage_T2 &&  digitalRead(AC_Available)==1 && RunWithOutBattery==false )
+if (Vin_Battery<Mini_Battery_Voltage_T2 &&  digitalRead(AC_Available)==1  &&  RunWithOutBattery==false )
 {
+CountSecondsRealTimePv_ReConnect_T2=0;
 SecondsRealTimePv_ReConnect_T2=0;
+CountCutSecondsRealTime_T2=1;
 Start_Timer_0_A();         // give some time for battery voltage
 }
 }// end of check timers
@@ -1613,21 +1638,20 @@ RunWithOutBattery=false;
 //----------------------------------------Start Timer-+-----------------------------------------
 void Start_Timer_0_A()
 {
-
-
+Read_Battery();
  //********************************Turn Off loads*******************************
- if(currentTime-previousTime_T1>=eventInterval_T1 &&Vin_Battery<Mini_Battery_Voltage && digitalRead(AC_Available)==1 && RunLoadsByBass==0 )
+if( CutSecondsRealTime_T1>= 15 &&  Vin_Battery<Mini_Battery_Voltage && digitalRead(AC_Available)==1 && RunLoadsByBass==0 )
 {
-SecondsRealTime=0;
+CutSecondsRealTime_T1=0;
+CountCutSecondsRealTime_T1=0;
 digitalWrite(Relay_L_Solar,0);
-previousTime_T1=millis();
 }
 
-if(currentTime-previousTime_T2>=eventInterval_T2 && Vin_Battery<Mini_Battery_Voltage_T2 && digitalRead(AC_Available)==1  && RunLoadsByBass==0)
+if( CutSecondsRealTime_T2>= 30 && Vin_Battery<Mini_Battery_Voltage_T2 && digitalRead(AC_Available)==1  && RunLoadsByBass==0)
 {
-SecondsRealTime=0;
+CutSecondsRealTime_T2=0;
+CountCutSecondsRealTime_T2=0;
 digitalWrite(Relay_L_Solar_2,0);
-previousTime_T2=millis();
 }
 
 } //end start timer
@@ -1635,16 +1659,22 @@ previousTime_T2=millis();
 void TurnLoadsOffWhenGridOff()
 {
 
-if(digitalRead(AC_Available)==1 && Timer_isOn==0 && RunLoadsByBass==0  && RunOnBatteryVoltageMode==0)
+if( digitalRead(AC_Available)==1 && Timer_isOn==0 && RunLoadsByBass==0  && RunOnBatteryVoltageMode==0)
 {
 SecondsRealTime=0;
+CountSecondsRealTime=0;
+SecondsRealTimePv_ReConnect_T1=0;
+CountSecondsRealTimePv_ReConnect_T1=0;
 digitalWrite(Relay_L_Solar,0);
 
 }
 
-if (digitalRead(AC_Available)==1&& Timer_2_isOn==0 && RunLoadsByBass==0 && RunOnBatteryVoltageMode==0)  // it must be   Timer_2_isOn==0    but because of error in loading eeprom value
+if (digitalRead(AC_Available)==1 && Timer_2_isOn==0 && RunLoadsByBass==0 && RunOnBatteryVoltageMode==0)  // it must be   Timer_2_isOn==0    but because of error in loading eeprom value
 {
 SecondsRealTime=0;
+CountSecondsRealTime=0;
+SecondsRealTimePv_ReConnect_T2=0;
+CountSecondsRealTimePv_ReConnect_T2=0;
 digitalWrite(Relay_L_Solar_2,0);
 
 }
@@ -1656,35 +1686,108 @@ LoadsAlreadySwitchedOFF=0;
 SecondsRealTime=0;
 SecondsRealTimePv_ReConnect_T1=0;
 SecondsRealTimePv_ReConnect_T2=0;
+CountSecondsRealTime=0;
+CountSecondsRealTimePv_ReConnect_T1=0;
+CountSecondsRealTimePv_ReConnect_T2=0;
 digitalWrite(Relay_L_Solar_2,0);
 digitalWrite(Relay_L_Solar,0);
 }
 }
-//-----------------------------------------Turn Off Backlight---------------------------------
-void TurnOffBacklight()
+
+//----------------------------------------Timer for counting seconds-------------------------------
+void Timer_Seconds()
 {
-if (currentTime-prevoiusTime_Backlight>= eventBacklightScree)
+noInterrupts();
+TCCR1A = 0; // very important 
+TCCR1B = 0; // very important 
+OCR1A=7800;  // 1 second 
+TCCR1B |= (1<< CS10) | (1<<CS12) | (1<WGM12); // 1024 prescalar 
+TIMSK1 |= (1 << OCIE1A) ;  // enabling interrupts 
+interrupts();
+}
+//--------------------------------------Timer Interrupt----------------------------------------
+ISR(TIMER1_COMPA_vect) 
 {
+TCNT1=0;   // very important 
+UpdateScreenTime++;
+if (CountSecondsRealTime==1) SecondsRealTime++;                                     // for counting real time for  grid count
+if (CountSecondsRealTimePv_ReConnect_T1==1) SecondsRealTimePv_ReConnect_T1++; // for counting real time for pv connect
+if(CountSecondsRealTimePv_ReConnect_T2==1) SecondsRealTimePv_ReConnect_T2++; // for counting real timer 
+if(CountCutSecondsRealTime_T1==1) CutSecondsRealTime_T1++; 
+if(CountCutSecondsRealTime_T2==1) CutSecondsRealTime_T2++; 
+if (UpdateScreenTime==180  )  // 1800 is 60 seconds to update
+{
+  UpdateScreenTime=0;
   digitalWrite(Backlight,0);
   lcd.begin(16,2);
   lcd.clear();
   lcd.noCursor();
   lcd.setCursor(0,0); 
-  prevoiusTime_Backlight=millis();
+}
+TurnLoadsOffWhenGridOff();
+ }
+ //-------------------------------------Wire Timeout----------------------------------------------
+ /*
+ ref: 
+ - https://myhomethings.eu/en/arduino-and-the-i2c-twi-protocol/
+ - https://www.fpaynter.com/2020/07/i2c-hangup-bug-cured-miracle-of-miracles-film-at-11/
+ - https://www.arduino.cc/reference/en/language/functions/communication/wire/setwiretimeout/?_gl=1*115qfm6*_ga*MTAzNjA3ODQuMTY4Nzg0NzA2Mg..*_ga_NEXN8H46L5*MTY5NDMyMzk0OC42OC4xLjE2OTQzMjY3NDEuMC4wLjA.
+ */
+void CheckWireTimeout()
+{
+ if (Wire.getWireTimeoutFlag())
+	{
+		Wire.clearWireTimeoutFlag();   // this flag is cleared manually or cleared when  setWireTimeout() is called 
+	}
+}
+//-----------------------------------Watch Dog timer----------------------------
+void WDT_Enable()
+{
+//asm cli;
+//asm wdr;
+cli();
+MCUSR &= ~(1<<WDRF);
+WDTCSR |= (1<<WDCE) | (1<<WDE);     //write a logic one to the Watchdog change enable bit (WDCE) and WDE
+WDTCSR |=  (1<<WDE);               //logic one must be written to WDE regardless of the previous value of the WDE bit.
+//WDTCSR =  (1 <<WDP0) | (1<<WDE)  ;
+sei();
 }
 
+void WDT_Prescaler_Change()
+{
+//asm cli;
+//asm wdr;
+cli();
+WDTCSR |= (1<<WDCE) | (1<<WDE);
+// Set new prescaler(time-out) value = 64K cycles (~0.5 s)
+WDTCSR  = (1<<WDE) | (1<<WDP3) | (1<<WDP0);     // very important the equal as in datasheet examples code
+//asm sei;
+sei();
+}
+
+void WDT_Disable()
+{
+//asm cli;
+//asm wdr;
+cli();
+MCUSR &= ~(1<<WDRF);
+WDTCSR |= (1<<WDCE) | (1<<WDE);
+//Turn off WDT
+WDTCSR = 0x00;
+//asm sei;
+sei();
 }
 //---------------------------------------MAIN LOOP-------------------------------------------------
 void setup() {
   // put your setup code here, to run once:
-  Config();
+    Config();
   Config_Interrupts();
   EEPROM_Load();
-}
+  Timer_Seconds();
+  }
 
 void loop() {
   // put your main code here, to run repeatedly:
-  currentTime=millis();
   CheckForSet(); // done 
   RunTimersNowCheck(); // done 
   CheckSystemBatteryMode();  // done
@@ -1694,7 +1797,6 @@ void loop() {
   Screen_1();  // done 
   Check_Timers();  // done
   TurnLoadsOffWhenGridOff();  // done
-  TurnOffBacklight();
+  CheckWireTimeout(); 
   delay(50);
-   
-}
+ }
