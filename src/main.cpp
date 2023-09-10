@@ -109,7 +109,7 @@ char SystemBatteryMode=0;
 char EnterSetupProgram=0; // variable to detect if mcu in loop of setup program
 unsigned int  ReadBatteryTime=0;
 char RunOnBatteryVoltageMode=0;
-bool UPSMode=0;       // i made ups mode and upo mode in same variable
+char UPSMode=0;       // i made ups mode and upo mode in same variable
 char LoadsAlreadySwitchedOFF=0;
 uint16_t Full_Seconds;
 unsigned long currentTime = 0;
@@ -1815,7 +1815,7 @@ EEPROM_Load();
 } 
 if (hours_lcd_2< 0  || hours_lcd_2 > 23)
 {
-hours_lcd_2=9; 
+hours_lcd_2=17; 
 EEPROM.write(2,hours_lcd_2);  
 EEPROM_Load();
 }  
@@ -1828,7 +1828,7 @@ EEPROM_Load();
 //----------------Timer 2 ------------------------
 if (hours_lcd_timer2_start< 0  || hours_lcd_timer2_start > 23)
 {
-hours_lcd_timer2_start=8; 
+hours_lcd_timer2_start=9; 
 EEPROM.write(4,hours_lcd_timer2_start);  
 EEPROM_Load();
 }  
@@ -1840,7 +1840,7 @@ EEPROM_Load();
 } 
 if (hours_lcd_timer2_stop< 0  || hours_lcd_timer2_stop > 23)
 {
-hours_lcd_timer2_stop=9; 
+hours_lcd_timer2_stop=17; 
 EEPROM.write(6,hours_lcd_timer2_stop);  
 EEPROM_Load();
 }  
@@ -1851,7 +1851,7 @@ EEPROM.write(7,minutes_lcd_timer2_stop);
 EEPROM_Load();
 }
 //---------------------------LOW Voltage------------------------------
-if (Mini_Battery_Voltage< 0  || Mini_Battery_Voltage > 65.0)
+if (Mini_Battery_Voltage< 0  || Mini_Battery_Voltage > 65.0 || isnan(Mini_Battery_Voltage))
 {
 if (SystemBatteryMode==12) Mini_Battery_Voltage=12.0; 
 if (SystemBatteryMode==24) Mini_Battery_Voltage=24.5; 
@@ -1859,7 +1859,7 @@ if (SystemBatteryMode==48) Mini_Battery_Voltage=49.0;
 EEPROM.put(8,Mini_Battery_Voltage);
 EEPROM_Load();
 }
-if (Mini_Battery_Voltage_T2< 0  || Mini_Battery_Voltage_T2 > 65.0)
+if (Mini_Battery_Voltage_T2< 0  || Mini_Battery_Voltage_T2 > 65.0 || isnan(Mini_Battery_Voltage_T2))
 {
 if (SystemBatteryMode==12) Mini_Battery_Voltage_T2=12.3; 
 if (SystemBatteryMode==24) Mini_Battery_Voltage_T2=25.0; 
@@ -1868,7 +1868,7 @@ EEPROM.put(12,Mini_Battery_Voltage_T2);
 EEPROM_Load();
 }
 //--------------------------Start Loads Voltage------------------------
-if (StartLoadsVoltage< 0  || StartLoadsVoltage > 65.0)
+if (StartLoadsVoltage< 0  || StartLoadsVoltage > 65.0 || isnan(StartLoadsVoltage) )
 {
 if (SystemBatteryMode==12) StartLoadsVoltage=13.0; 
 if (SystemBatteryMode==24) StartLoadsVoltage=25.5; 
@@ -1876,7 +1876,7 @@ if (SystemBatteryMode==48) StartLoadsVoltage=52.0;
 EEPROM.put(16,StartLoadsVoltage);
 EEPROM_Load();
 }
-if (StartLoadsVoltage_T2< 0  || StartLoadsVoltage_T2 > 65.0)
+if (StartLoadsVoltage_T2< 0  || StartLoadsVoltage_T2 > 65.0 || isnan(StartLoadsVoltage_T2))
 {
 if (SystemBatteryMode==12) StartLoadsVoltage_T2=13.2; 
 if (SystemBatteryMode==24) StartLoadsVoltage_T2=26.0; 
@@ -1887,13 +1887,13 @@ EEPROM_Load();
 //-------------------------Startup Timers--------------------------------
 if (startupTIme_1< 0  || startupTIme_1 > 900)
 {
-startupTIme_1=0; 
+startupTIme_1=90; 
 EEPROM.put(24,startupTIme_1);
 EEPROM_Load();
 }
 if (startupTIme_2< 0  || startupTIme_2 > 900)
 {
-startupTIme_2=0; 
+startupTIme_2=120; 
 EEPROM.put(26,startupTIme_2);
 EEPROM_Load();
 }
