@@ -202,7 +202,7 @@ lcd.begin(16,2);
 lcd.clear();
 lcd.noCursor();
 lcd.setCursor(0,0);
-lcd.print("   SLC V2.0.0   ");
+lcd.print("    SLC V2.0    ");
 delay(1500);
 lcd.clear();
 Wire.begin();
