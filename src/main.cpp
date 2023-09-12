@@ -226,7 +226,7 @@ digitalWrite(Backlight,1);
 //-------------------------------When Grid is Turned Off---------------------------------------------------------
 void Interrupt_INT1()
 {
-
+delay(1000) ; 
  //-> functions for shutting down loads if there is no timers and grid is off
 if(digitalRead(AC_Available)==1 && Timer_isOn==0  && RunLoadsByBass==0 && RunOnBatteryVoltageMode==0)
 {
@@ -1390,7 +1390,7 @@ void CheckSystemBatteryMode()
 if (Vin_Battery>= 35 && Vin_Battery <= 60) SystemBatteryMode=48;
 else if (Vin_Battery>=18 && Vin_Battery <=32) SystemBatteryMode=24;
 else if (Vin_Battery >=1 && Vin_Battery<= 16 ) SystemBatteryMode=12;
-else SystemBatteryMode=24; // take it as default
+else SystemBatteryMode=48; // take it as default
 }
 //----------------------------------LCD Reconfig()---------------------------------
 void LCD_ReConfig()
@@ -1678,7 +1678,7 @@ digitalWrite(Relay_L_Solar_2,0);
 //-----------------------------------------Turn Off Loads Grid----------------------------------
 void TurnLoadsOffWhenGridOff()
 {
-
+delay(500);
 if( digitalRead(AC_Available)==1 && Timer_isOn==0 && RunLoadsByBass==0  && RunOnBatteryVoltageMode==0)
 {
 SecondsRealTime=0;
@@ -1809,13 +1809,13 @@ EEPROM_Load();
 }  
 if (minutes_lcd_1< 0  || minutes_lcd_1 > 59)
 {
-minutes_lcd_1=0; 
+minutes_lcd_1=30; 
 EEPROM.write(1,minutes_lcd_1);  
 EEPROM_Load();
 } 
 if (hours_lcd_2< 0  || hours_lcd_2 > 23)
 {
-hours_lcd_2=17; 
+hours_lcd_2=18; 
 EEPROM.write(2,hours_lcd_2);  
 EEPROM_Load();
 }  
@@ -1855,7 +1855,7 @@ if (Mini_Battery_Voltage< 0  || Mini_Battery_Voltage > 65.0 || isnan(Mini_Batter
 {
 if (SystemBatteryMode==12) Mini_Battery_Voltage=12.0; 
 if (SystemBatteryMode==24) Mini_Battery_Voltage=24.5; 
-if (SystemBatteryMode==48) Mini_Battery_Voltage=49.0; 
+if (SystemBatteryMode==48) Mini_Battery_Voltage=48.5; 
 EEPROM.put(8,Mini_Battery_Voltage);
 EEPROM_Load();
 }
@@ -1863,7 +1863,7 @@ if (Mini_Battery_Voltage_T2< 0  || Mini_Battery_Voltage_T2 > 65.0 || isnan(Mini_
 {
 if (SystemBatteryMode==12) Mini_Battery_Voltage_T2=12.3; 
 if (SystemBatteryMode==24) Mini_Battery_Voltage_T2=25.0; 
-if (SystemBatteryMode==48) Mini_Battery_Voltage_T2=50.0; 
+if (SystemBatteryMode==48) Mini_Battery_Voltage_T2=49.5; 
 EEPROM.put(12,Mini_Battery_Voltage_T2);
 EEPROM_Load();
 }
@@ -1872,7 +1872,7 @@ if (StartLoadsVoltage< 0  || StartLoadsVoltage > 65.0 || isnan(StartLoadsVoltage
 {
 if (SystemBatteryMode==12) StartLoadsVoltage=13.0; 
 if (SystemBatteryMode==24) StartLoadsVoltage=25.5; 
-if (SystemBatteryMode==48) StartLoadsVoltage=52.0; 
+if (SystemBatteryMode==48) StartLoadsVoltage=50.5; 
 EEPROM.put(16,StartLoadsVoltage);
 EEPROM_Load();
 }
@@ -1880,20 +1880,20 @@ if (StartLoadsVoltage_T2< 0  || StartLoadsVoltage_T2 > 65.0 || isnan(StartLoadsV
 {
 if (SystemBatteryMode==12) StartLoadsVoltage_T2=13.2; 
 if (SystemBatteryMode==24) StartLoadsVoltage_T2=26.0; 
-if (SystemBatteryMode==48) StartLoadsVoltage_T2=53.0; 
+if (SystemBatteryMode==48) StartLoadsVoltage_T2=51.5; 
 EEPROM.put(20,StartLoadsVoltage_T2);
 EEPROM_Load();
 }
 //-------------------------Startup Timers--------------------------------
 if (startupTIme_1< 0  || startupTIme_1 > 900)
 {
-startupTIme_1=90; 
+startupTIme_1=180; 
 EEPROM.put(24,startupTIme_1);
 EEPROM_Load();
 }
 if (startupTIme_2< 0  || startupTIme_2 > 900)
 {
-startupTIme_2=120; 
+startupTIme_2=240; 
 EEPROM.put(26,startupTIme_2);
 EEPROM_Load();
 }
