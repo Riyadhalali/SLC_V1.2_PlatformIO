@@ -226,7 +226,7 @@ digitalWrite(Backlight,1);
 //-------------------------------When Grid is Turned Off---------------------------------------------------------
 void Interrupt_INT1()
 {
-delay(1000) ; 
+//delay(1000) ; 
  //-> functions for shutting down loads if there is no timers and grid is off
 if(digitalRead(AC_Available)==1 && Timer_isOn==0  && RunLoadsByBass==0 && RunOnBatteryVoltageMode==0)
 {
@@ -1390,7 +1390,9 @@ void CheckSystemBatteryMode()
 if (Vin_Battery>= 35 && Vin_Battery <= 60) SystemBatteryMode=48;
 else if (Vin_Battery>=18 && Vin_Battery <=32) SystemBatteryMode=24;
 else if (Vin_Battery >=1 && Vin_Battery<= 16 ) SystemBatteryMode=12;
-else SystemBatteryMode=48; // take it as default
+else if(Vin_Battery==0) SystemBatteryMode=24;
+// else SystemBatteryMode=24; // take it as default
+
 }
 //----------------------------------LCD Reconfig()---------------------------------
 void LCD_ReConfig()
@@ -1678,7 +1680,7 @@ digitalWrite(Relay_L_Solar_2,0);
 //-----------------------------------------Turn Off Loads Grid----------------------------------
 void TurnLoadsOffWhenGridOff()
 {
-delay(500);
+//delay(500);
 if( digitalRead(AC_Available)==1 && Timer_isOn==0 && RunLoadsByBass==0  && RunOnBatteryVoltageMode==0)
 {
 SecondsRealTime=0;
@@ -1809,7 +1811,7 @@ EEPROM_Load();
 }  
 if (minutes_lcd_1< 0  || minutes_lcd_1 > 59)
 {
-minutes_lcd_1=30; 
+minutes_lcd_1=0; 
 EEPROM.write(1,minutes_lcd_1);  
 EEPROM_Load();
 } 
@@ -1872,7 +1874,7 @@ if (StartLoadsVoltage< 0  || StartLoadsVoltage > 65.0 || isnan(StartLoadsVoltage
 {
 if (SystemBatteryMode==12) StartLoadsVoltage=13.0; 
 if (SystemBatteryMode==24) StartLoadsVoltage=25.5; 
-if (SystemBatteryMode==48) StartLoadsVoltage=50.5; 
+if (SystemBatteryMode==48) StartLoadsVoltage=51.0; 
 EEPROM.put(16,StartLoadsVoltage);
 EEPROM_Load();
 }
@@ -1880,7 +1882,7 @@ if (StartLoadsVoltage_T2< 0  || StartLoadsVoltage_T2 > 65.0 || isnan(StartLoadsV
 {
 if (SystemBatteryMode==12) StartLoadsVoltage_T2=13.2; 
 if (SystemBatteryMode==24) StartLoadsVoltage_T2=26.0; 
-if (SystemBatteryMode==48) StartLoadsVoltage_T2=51.5; 
+if (SystemBatteryMode==48) StartLoadsVoltage_T2=52.0; 
 EEPROM.put(20,StartLoadsVoltage_T2);
 EEPROM_Load();
 }
@@ -1926,7 +1928,6 @@ void loop() {
   CheckForParams();
   CheckForSet(); // done 
   RunTimersNowCheck(); // done 
-  CheckSystemBatteryMode();  // done
   AutoRunWithOutBatteryProtection();
   CheckForTimerActivationInRange();  // done
   CheckForTimerActivationOutRange();  // done
@@ -1934,5 +1935,6 @@ void loop() {
   Check_Timers();  // done
   TurnLoadsOffWhenGridOff();  // done
   CheckWireTimeout(); 
+  CheckSystemBatteryMode();  // done
   delay(50);
  }
