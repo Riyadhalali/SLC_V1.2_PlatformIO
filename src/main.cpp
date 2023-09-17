@@ -284,7 +284,7 @@ else
   lcd.print("Voltage Mode");
 
 }
-Read_Time();
+
 Read_Battery();
 CalculateAC();
 //interrupts(); 
@@ -1257,7 +1257,7 @@ delay(1000);
 lcd.clear();
 }
 }
-//-----------------RunOnBatteryVoltageMode--------------------------------------
+//--------------------------RunOnBatteryVoltageMode--------------------------------------
 if (digitalRead(Increment)==0 && digitalRead(Exit)==1 && digitalRead(Decrement)==1)      // first
 {
 LCD_ReConfig();
@@ -1295,8 +1295,8 @@ if (digitalRead(Decrement)==1 && digitalRead(Exit)==0)
 delay(2500);
 if (digitalRead(Decrement)==1 && digitalRead(Exit)==0)
 {
-TurnOffLoadsByPass=1;
-RunLoadsByBass=0;
+  TurnOffLoadsByPass=1;
+  RunLoadsByBass=0;
 digitalWrite(Relay_L_Solar,0);
 digitalWrite(Relay_L_Solar_2,0);
 lcd.setCursor(15,0);
@@ -1629,8 +1629,6 @@ if (  SecondsRealTimePv_ReConnect_T2 > startupTIme_2) digitalWrite(Relay_L_Solar
 //--Turn Load off when battery Voltage  is Low and AC Not available and Bypass is enabled
 if (Vin_Battery<Mini_Battery_Voltage &&  digitalRead(AC_Available)==1  && RunWithOutBattery==false )
 {
-CountSecondsRealTimePv_ReConnect_T1=0;
-SecondsRealTimePv_ReConnect_T1=0;
 CountCutSecondsRealTime_T1=1;
 Start_Timer_0_A();         // give some time for battery voltage
 }
@@ -1638,8 +1636,6 @@ Start_Timer_0_A();         // give some time for battery voltage
 //--Turn Load off when battery Voltage  is Low and AC Not available and Bypass is enabled
 if (Vin_Battery<Mini_Battery_Voltage_T2 &&  digitalRead(AC_Available)==1  &&  RunWithOutBattery==false )
 {
-CountSecondsRealTimePv_ReConnect_T2=0;
-SecondsRealTimePv_ReConnect_T2=0;
 CountCutSecondsRealTime_T2=1;
 Start_Timer_0_A();         // give some time for battery voltage
 }
@@ -1666,6 +1662,8 @@ if( CutSecondsRealTime_T1>= 15 &&  Vin_Battery<Mini_Battery_Voltage && digitalRe
 {
 CutSecondsRealTime_T1=0;
 CountCutSecondsRealTime_T1=0;
+CountSecondsRealTimePv_ReConnect_T1=0;
+SecondsRealTimePv_ReConnect_T1=0;
 digitalWrite(Relay_L_Solar,0);
 }
 
@@ -1673,6 +1671,8 @@ if( CutSecondsRealTime_T2>= 30 && Vin_Battery<Mini_Battery_Voltage_T2 && digital
 {
 CutSecondsRealTime_T2=0;
 CountCutSecondsRealTime_T2=0;
+CountSecondsRealTimePv_ReConnect_T2=0;
+SecondsRealTimePv_ReConnect_T2=0;
 digitalWrite(Relay_L_Solar_2,0);
 }
 
@@ -1681,7 +1681,6 @@ digitalWrite(Relay_L_Solar_2,0);
 void TurnLoadsOffWhenGridOff()
 {
 //delay(500);
-if( digitalRead(AC_Available)==1 && Timer_isOn==0 && RunLoadsByBass==0  && RunOnBatteryVoltageMode==0)
 {
 SecondsRealTime=0;
 CountSecondsRealTime=0;
@@ -1732,11 +1731,11 @@ ISR(TIMER1_COMPA_vect)
 {
 TCNT1=0;   // very important 
 UpdateScreenTime++;
-if (CountSecondsRealTime==1) SecondsRealTime++;                                     // for counting real time for  grid count
-if (CountSecondsRealTimePv_ReConnect_T1==1) SecondsRealTimePv_ReConnect_T1++; // for counting real time for pv connect
-if(CountSecondsRealTimePv_ReConnect_T2==1) SecondsRealTimePv_ReConnect_T2++; // for counting real timer 
-if(CountCutSecondsRealTime_T1==1) CutSecondsRealTime_T1++; 
-if(CountCutSecondsRealTime_T2==1) CutSecondsRealTime_T2++; 
+  if (CountSecondsRealTime==1) SecondsRealTime++;                                     // for counting real time for  grid count
+  if (CountSecondsRealTimePv_ReConnect_T1==1) SecondsRealTimePv_ReConnect_T1++; // for counting real time for pv connect
+  if(CountSecondsRealTimePv_ReConnect_T2==1) SecondsRealTimePv_ReConnect_T2++; // for counting real timer 
+  if(CountCutSecondsRealTime_T1==1) CutSecondsRealTime_T1++; 
+  if(CountCutSecondsRealTime_T2==1) CutSecondsRealTime_T2++; 
 if (UpdateScreenTime==180  )  // 1800 is 60 seconds to update
 {
   UpdateScreenTime=0;
