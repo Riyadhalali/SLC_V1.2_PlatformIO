@@ -1681,6 +1681,7 @@ digitalWrite(Relay_L_Solar_2,0);
 void TurnLoadsOffWhenGridOff()
 {
 //delay(500);
+if( digitalRead(AC_Available)==1 && Timer_isOn==0 && RunLoadsByBass==0  && RunOnBatteryVoltageMode==0)
 {
 SecondsRealTime=0;
 CountSecondsRealTime=0;
