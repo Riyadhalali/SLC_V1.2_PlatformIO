@@ -409,6 +409,11 @@ while (digitalRead(Set)==1 )
 sprintf(txt,"[1] H:%02d-M:%02d",hours_lcd_1,minutes_lcd_1);
 lcd.setCursor(0,0);
 lcd.print(txt);
+delay(500);
+sprintf(txt,"[1] H:%02d-M:  ",hours_lcd_1);
+lcd.setCursor(0,0);
+lcd.print(txt);
+delay(500);
 if (digitalRead(Exit)==1 )
 {
 break;     //break out of the while loop
@@ -417,6 +422,7 @@ break;     //break out of the while loop
 //-> to make sure that the value will never be changed until the user press increment or decrement
 while (digitalRead(Increment) == 1 || digitalRead(Decrement)==1)
 {
+sprintf(txt,"[1] H:%02d-M:%02d",hours_lcd_1,minutes_lcd_1);
 if (digitalRead(Increment)==1 )
 {
 delay(200);
@@ -448,6 +454,7 @@ break;     //break out of the while loop
  //-> to make sure that the value will never be changed until the user press increment or decrement
 while (digitalRead(Increment) == 1 || digitalRead(Decrement) == 1 )
 {
+sprintf(txt,"[1] H:%02d-M:%02d",hours_lcd_1,minutes_lcd_1);
 if (digitalRead(Increment) == 1 )
 {
 delay(200);
@@ -1510,8 +1517,8 @@ if (digitalRead(AC_Available)==1  && Timer_Enable==1 && RunWithOutBattery==false
 ///SolarOnGridOff_2=0; // to enter once again in the interrupt
 //for the turn off there is no need for delay
 digitalWrite(Relay_L_Solar_2,0);
-SecondsRealTimePv_ReConnect_T2=0;
-CountSecondsRealTimePv_ReConnect_T2=0;
+SecondsRealTimePv_ReConnect_T2=0;      // MUST Be zero 
+CountSecondsRealTimePv_ReConnect_T2=0; // MUST Be zero 
 
 }
 
@@ -1545,7 +1552,7 @@ digitalWrite(Relay_L_Solar_2,1);
 
 } // end function of voltage protector
 
-//-------------------------Bypass Mode Upo Mode---------------------------------
+//------------------------------Bypass Mode Upo Mode-------------------------------------
  if(digitalRead(AC_Available)==0 && UPSMode==1 )   // voltage protector is not enabled
 {
 //delay(250);       // for error to get one seconds approxmiallty
@@ -1577,6 +1584,8 @@ if (digitalRead(AC_Available)==1 && Timer_isOn==1 && Vin_Battery >= StartLoadsVo
 
 //SecondsRealTimePv_ReConnect_T1++;
 CountSecondsRealTimePv_ReConnect_T1=1;
+CountCutSecondsRealTime_T1=0;
+CutSecondsRealTime_T1=0;
 //delay(200);
 if (  SecondsRealTimePv_ReConnect_T1 > startupTIme_1)    digitalWrite(Relay_L_Solar,1);
 
@@ -1585,6 +1594,8 @@ if (digitalRead(AC_Available)==1 && Timer_isOn==1  && RunWithOutBattery==true &&
 {
 //econdsRealTimePv_ReConnect_T1++;
 CountSecondsRealTimePv_ReConnect_T1=1;
+CountCutSecondsRealTime_T1=0;
+CutSecondsRealTime_T1=0;
 //delay(200);
 
 if (  SecondsRealTimePv_ReConnect_T1 > startupTIme_1) digitalWrite(Relay_L_Solar,1);
@@ -1595,6 +1606,8 @@ if (digitalRead(AC_Available)==1 && Timer_2_isOn==1 && Vin_Battery >= StartLoads
 {
 //SecondsRealTimePv_ReConnect_T2++;
 CountSecondsRealTimePv_ReConnect_T2=1;
+CountCutSecondsRealTime_T2=0;
+CutSecondsRealTime_T2=0;
 //delay(50);
 if (  SecondsRealTimePv_ReConnect_T2 > startupTIme_2)
  digitalWrite(Relay_L_Solar_2,1);
@@ -1604,6 +1617,8 @@ if ( digitalRead(AC_Available)==1 && Timer_2_isOn==1 &&  RunWithOutBattery==true
 {
 //SecondsRealTimePv_ReConnect_T2++;
 CountSecondsRealTimePv_ReConnect_T2=1;
+CountCutSecondsRealTime_T2=0;
+CutSecondsRealTime_T2=0;
 //delay(50);
 if (  SecondsRealTimePv_ReConnect_T2 > startupTIme_2)
  digitalWrite(Relay_L_Solar_2,1);
@@ -1614,6 +1629,8 @@ if (  SecondsRealTimePv_ReConnect_T2 > startupTIme_2)
 
 //SecondsRealTimePv_ReConnect_T1++;
 CountSecondsRealTimePv_ReConnect_T1=1;
+CountCutSecondsRealTime_T1=0;
+CutSecondsRealTime_T1=0;
 //delay(200);
 if (  SecondsRealTimePv_ReConnect_T1 > startupTIme_1)     digitalWrite(Relay_L_Solar,1);
 }
@@ -1622,6 +1639,8 @@ if ( digitalRead(AC_Available)==1 && Vin_Battery >= StartLoadsVoltage_T2 && RunW
 {
 //SecondsRealTimePv_ReConnect_T2++;
 CountSecondsRealTimePv_ReConnect_T2=1;
+CountCutSecondsRealTime_T2=0;
+CutSecondsRealTime_T2=0;
 //delay(50);
 if (  SecondsRealTimePv_ReConnect_T2 > startupTIme_2) digitalWrite(Relay_L_Solar_2,1);
 }
@@ -1731,7 +1750,7 @@ interrupts();
 ISR(TIMER1_COMPA_vect) 
 {
 TCNT1=0;   // very important 
-UpdateScreenTime++;
+  UpdateScreenTime++;
   if (CountSecondsRealTime==1) SecondsRealTime++;                                     // for counting real time for  grid count
   if (CountSecondsRealTimePv_ReConnect_T1==1) SecondsRealTimePv_ReConnect_T1++; // for counting real time for pv connect
   if(CountSecondsRealTimePv_ReConnect_T2==1) SecondsRealTimePv_ReConnect_T2++; // for counting real timer 
@@ -1746,8 +1765,28 @@ if (UpdateScreenTime==180  )  // 1800 is 60 seconds to update
   lcd.noCursor();
   lcd.setCursor(0,0); 
 }
-TurnLoadsOffWhenGridOff();
- }
+//------------------------------------------------------------------------------------------
+TurnLoadsOffWhenGridOff(); // just to check that what matter happens the loads will switch off even if mcu got stuck 
+}
+//-------------------------------------Timer 0 For Switching off Loads --------------------------------
+//-> this timer for switching loads off after period of time  
+// NOTE: NOT USED 
+/*void Start_Timer_0_A__()
+{
+noInterrupts(); 
+TCCR0A=0; 
+TCCR0B=0;
+TCCR0A |= (1<<WGM01);   // CTC MODe 
+TCCR0B |= (1<<CS00) | (1<<CS01); // 1024 prescalar 
+OCR0A=0xFF; 
+TIMSK0 |= (1<<OCIE0A);
+interrupts(); 
+}
+ISR(TIMER0_COMPA_vect)
+{
+
+}
+*/
  //-------------------------------------Wire Timeout----------------------------------------------
  /*
  ref: 
