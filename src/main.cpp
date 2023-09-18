@@ -409,11 +409,6 @@ while (digitalRead(Set)==1 )
 sprintf(txt,"[1] H:%02d-M:%02d",hours_lcd_1,minutes_lcd_1);
 lcd.setCursor(0,0);
 lcd.print(txt);
-delay(500);
-sprintf(txt,"[1] H:%02d-M:  ",hours_lcd_1);
-lcd.setCursor(0,0);
-lcd.print(txt);
-delay(500);
 if (digitalRead(Exit)==1 )
 {
 break;     //break out of the while loop
@@ -1363,9 +1358,9 @@ StartLoadsVoltage_T2=26.0;
 if(SystemBatteryMode==48)
 {
 Mini_Battery_Voltage=49.0;
-StartLoadsVoltage=52.0;
+StartLoadsVoltage=51.0;
 Mini_Battery_Voltage_T2=50.0,
-StartLoadsVoltage_T2=53.0;
+StartLoadsVoltage_T2=52.0;
 }
 startupTIme_1 =90;
 startupTIme_2=120;
@@ -1856,7 +1851,7 @@ EEPROM_Load();
 } 
 if (hours_lcd_2< 0  || hours_lcd_2 > 23)
 {
-hours_lcd_2=18; 
+hours_lcd_2=17; 
 EEPROM.write(2,hours_lcd_2);  
 EEPROM_Load();
 }  
@@ -1896,7 +1891,7 @@ if (Mini_Battery_Voltage< 0  || Mini_Battery_Voltage > 65.0 || isnan(Mini_Batter
 {
 if (SystemBatteryMode==12) Mini_Battery_Voltage=12.0; 
 if (SystemBatteryMode==24) Mini_Battery_Voltage=24.5; 
-if (SystemBatteryMode==48) Mini_Battery_Voltage=48.5; 
+if (SystemBatteryMode==48) Mini_Battery_Voltage=49.0; 
 EEPROM.put(8,Mini_Battery_Voltage);
 EEPROM_Load();
 }
@@ -1904,7 +1899,7 @@ if (Mini_Battery_Voltage_T2< 0  || Mini_Battery_Voltage_T2 > 65.0 || isnan(Mini_
 {
 if (SystemBatteryMode==12) Mini_Battery_Voltage_T2=12.3; 
 if (SystemBatteryMode==24) Mini_Battery_Voltage_T2=25.0; 
-if (SystemBatteryMode==48) Mini_Battery_Voltage_T2=49.5; 
+if (SystemBatteryMode==48) Mini_Battery_Voltage_T2=50.0; 
 EEPROM.put(12,Mini_Battery_Voltage_T2);
 EEPROM_Load();
 }
@@ -1928,13 +1923,13 @@ EEPROM_Load();
 //-------------------------Startup Timers--------------------------------
 if (startupTIme_1< 0  || startupTIme_1 > 900)
 {
-startupTIme_1=180; 
+startupTIme_1=90; 
 EEPROM.put(24,startupTIme_1);
 EEPROM_Load();
 }
 if (startupTIme_2< 0  || startupTIme_2 > 900)
 {
-startupTIme_2=240; 
+startupTIme_2=120; 
 EEPROM.put(26,startupTIme_2);
 EEPROM_Load();
 }
