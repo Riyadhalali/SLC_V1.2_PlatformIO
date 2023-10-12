@@ -1389,7 +1389,7 @@ EEPROM.put(26,startupTIme_2);
 //----------------------------------------Check Battery System Mode------------------------------
 void CheckSystemBatteryMode()
 {
-if (Vin_Battery>= 35 && Vin_Battery <= 60) SystemBatteryMode=48;
+if (Vin_Battery>= 35 && Vin_Battery <= 70) SystemBatteryMode=48;
 else if (Vin_Battery>=18 && Vin_Battery <=32) SystemBatteryMode=24;
 else if (Vin_Battery >=1 && Vin_Battery<= 16 ) SystemBatteryMode=12;
 else if(Vin_Battery==0) SystemBatteryMode=24;
